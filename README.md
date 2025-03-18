@@ -1,3 +1,3 @@
 # PAA-project-game
 
-Note :    PROJEK BERSAMA
+Note :    Team Base Project
