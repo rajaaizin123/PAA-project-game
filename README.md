@@ -1,6 +1,7 @@
 # PAA-project-game
 
-Note :    Team Base Project - In Progress
+* Note :    Team Base Project - In Progress
+* File kode berada di src
 
 ## Running Game
 * Buka folder bin
