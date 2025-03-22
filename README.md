@@ -6,4 +6,4 @@
 ## Running Game
 * Buka folder bin
 * Buka Folder Debug
-* Jalankan file biner dengan nama c.exe
+* Cari file dengan nama c.exe dan Jalankan 
