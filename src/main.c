@@ -24,6 +24,7 @@ by Jeffery Myers is marked with CC0 1.0. To view a copy of this license, visit h
 
 int main ()
 {
+	
 	// Tell the window to use vsync and work on high DPI displays
 	SetConfigFlags(FLAG_VSYNC_HINT | FLAG_WINDOW_HIGHDPI);
 
@@ -64,7 +65,7 @@ int main ()
 
 	  // drawing
 	  BeginDrawing();
-
+	 
 	  // Setup the back buffer for drawing (clear color and depth buffers)
 	  ClearBackground(BLACK);
 
