@@ -1,6 +1,6 @@
 # PAA-project-game
 
-* Note :    Team Base Project - In Progress
+* Note : Team Base Project - Ongoing
 * File kode berada di src
 
 ## Running Game
