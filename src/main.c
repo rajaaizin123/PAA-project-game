@@ -21,10 +21,53 @@ by Jeffery Myers is marked with CC0 1.0. To view a copy of this license, visit h
 
 #define GUI_WINDOW_FILE_DIALOG_IMPLEMENTATION
 #include "gui_window_file_dialog.h"
-
+typedef enum
+{
+	MENU_STATE,
+	GAME_STATE
+} GameState;
 int main ()
 {
-	
+	// Window Inilisiation
+	const int screenWidth = 800;
+	const int screenHeight = 600;
+	InitWindow(screenWidth, GetScreenHeight, "Game Start");
+
+	// set Frame FPS
+	SetTargetFPS(60);
+	// Start from the main menu
+	GameState currentScreen = MENU_STATE;
+
+	// “Start” button
+	Rectangle startButton = {screenWidth / 2 - 100, screenHeight / 2 - 30, 200, 60};
+
+	// Looping Game
+	while (!WindowShouldClose())
+	{
+		Vector2 mousepoint = GetMousePosition();
+		// check keyboard input
+		if (currentScreen == MENU_STATE)
+		{
+			if (GuiButton((Rectangle){screenWidth / 2 - 50, screenHeight / 2 - 20, 100, 40}, "START"))
+			{
+				currentScreen = GAME_STATE;
+			}
+		}
+
+		BeginDrawing();
+		ClearBackground(BLACK);
+		if (currentScreen == MENU_STATE)
+		{
+			GuiButton((Rectangle){screenWidth / 2 - 50, screenHeight / 2 - 20, 100, 40}, "START");
+		}
+		else if (currentScreen == GAME_STATE)
+		{
+			DrawText("Game is Running!", screenWidth / 2 - 80, screenHeight / 2, 20, BLUE);
+		}
+
+		EndDrawing();
+	}
+
 	// Tell the window to use vsync and work on high DPI displays
 	SetConfigFlags(FLAG_VSYNC_HINT | FLAG_WINDOW_HIGHDPI);
 
