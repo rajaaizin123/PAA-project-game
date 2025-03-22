@@ -27,58 +27,58 @@ int main ()
 	// Tell the window to use vsync and work on high DPI displays
 	SetConfigFlags(FLAG_VSYNC_HINT | FLAG_WINDOW_HIGHDPI);
 
-	// Create the window and OpenGL context
-	InitWindow(1100, 700, "Kurir Wahabi");
+	InitWindow(1100, 700, "Smart Kurir");
 
 	GuiWindowFileDialogState fileDialogState = InitGuiWindowFileDialog(GetWorkingDirectory());
 	char namaFileGambar[512] = { 0 };
-	Texture texture = { 0 };
+	Texture map_texture = { 0 };
 
 	// Utility function from resource_dir.h to find the resources folder and set it as the current working directory so we can load from it
 	SearchAndSetResourceDir("resources");
-
-	//Image map = LoadImage("map.png");
-	//Texture mapTexture = LoadTextureFromImage(map);
-
+	
 	bool tombol = false;
 	SetTargetFPS(60);
 
 	// game loop
-	while (!WindowShouldClose())		// run the loop untill the user presses ESCAPE or presses the Close button on the window
-	{
+	while (!WindowShouldClose()){
 
-		if (fileDialogState.SelectFilePressed)
-        {
+	    if (fileDialogState.SelectFilePressed){
             // Load image file (if supported extension)
-            if (IsFileExtension(fileDialogState.fileNameText, ".png"))
-            {
-                strcpy(namaFileGambar, TextFormat("%s" PATH_SEPERATOR "%s", fileDialogState.dirPathText, fileDialogState.fileNameText));
-                UnloadTexture(texture);
-                texture = LoadTexture(namaFileGambar);
-            }
-
-            fileDialogState.SelectFilePressed = false;
+	            if (IsFileExtension(fileDialogState.fileNameText, ".png")){
+			// gabung direktori dan nama file
+	                strcpy(namaFileGambar, TextFormat("%s" PATH_SEPERATOR "%s", fileDialogState.dirPathText, fileDialogState.fileNameText));
+	
+			// Load image
+			map = LoadImage(namaFileGambar);
+			if (map.data == NULL){
+				printf("Gagal load gambar.\n");
+			}else{
+				UnloadTexture(map_texture);
+				map_texture = LoadTextureFromImage(map);
+			}
+	            }
+	
+	            fileDialogState.SelectFilePressed = false;
         }
 
-		// drawing
-		BeginDrawing();
+	  // drawing
+	  BeginDrawing();
 
-		// Setup the back buffer for drawing (clear color and depth buffers)
-		ClearBackground(BLACK);
+	  // Setup the back buffer for drawing (clear color and depth buffers)
+	  ClearBackground(BLACK);
 
-		DrawTexture(texture, GetScreenWidth()/2 - texture.width/2, GetScreenHeight()/2 - texture.height/2 - 5, WHITE);
-		DrawRectangleLines(GetScreenWidth()/2 - texture.width/2, GetScreenHeight()/2 - texture.height/2 - 5, texture.width, texture.height, BLACK);
+          DrawTexture(map_texture, GetScreenWidth()/2 - map_texture.width/2, GetScreenHeight()/2 - map_texture.height/2 - 5, WHITE);
+	  DrawRectangleLines(GetScreenWidth()/2 - map_texture.width/2, GetScreenHeight()/2 - map_texture.height/2 - 5, map_texture.width, map_texture.height, BLACK);
 
-		DrawText(namaFileGambar, 208, GetScreenHeight() - 20, 10, GRAY);
+	  //DrawText(namaFileGambar, 208, GetScreenHeight() - 20, 10, GRAY);
 
-		//tombol = GuiButton((Rectangle){ 200, 300, 100, 50 }, "Pilih Map");
+          //tombol = GuiButton((Rectangle){ 200, 300, 100, 50 }, "Pilih Map");
 		
-		if (fileDialogState.windowActive) GuiLock();
+	   if (fileDialogState.windowActive) GuiLock();
 
-		if (GuiButton((Rectangle){ 20, 20, 140, 30 }, GuiIconText(ICON_FILE_OPEN, "Pilih Map"))) fileDialogState.windowActive = true;
+	   if (GuiButton((Rectangle){ 20, 20, 140, 30 }, GuiIconText(ICON_FILE_OPEN, "Pilih Map"))) fileDialogState.windowActive = true;
 
-		GuiUnlock();
-
+	   GuiUnlock();
 		// GUI: Dialog Window
 		//--------------------------------------------------------------------------------
 		GuiWindowFileDialog(&fileDialogState);
@@ -91,7 +91,7 @@ int main ()
 		//DrawTexture(wabbit, 50, 50, WHITE);
 		//GuiButton((Rectangle){ 50, 50, 150, 40 }, "Open File");
 
-		// proses...
+		// proses...  cek warna pada tiap posisi pixel
 		//Color pixelColor = GetImageColor(map, 60, 60);
 		// printf("Kode merah %d\n", pixelColor.r);
 		// printf("Kode hijau %d\n", pixelColor.g);
@@ -105,7 +105,7 @@ int main ()
 
 	// cleanup
 	// unload our texture so it can be cleaned up
-	UnloadTexture(texture);
+	UnloadTexture(map_texture);
 
 	// destroy the window and cleanup the OpenGL context
 	CloseWindow();
