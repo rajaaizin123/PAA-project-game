@@ -4,6 +4,6 @@
 * File kode berada di src
 
 ## Running Game
-* Buka folder bin
-* Buka Folder Debug
+* Masuk ke folder **bin**  
+* Lanjut ke folder **Debug** 🚀
 * Cari file dengan nama c.exe dan Jalankan 
