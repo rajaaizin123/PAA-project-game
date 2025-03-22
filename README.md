@@ -7,3 +7,10 @@
 * Masuk ke folder **bin**  
 * Lanjut ke folder **Debug** 🚀
 * Cari file dengan nama c.exe dan Jalankan 
+
+## Anggota Kelompok 
+* Raja Aizin Nofrizivaldy -  2301020027
+* Cahyadi Prasetyo - 2301020005
+* Hermawan - 2301020025
+* Jovic Khidir Evta 2301020030
+
