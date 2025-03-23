@@ -112,6 +112,14 @@ int main()
 			{
 				startgame = true;
 			}
+			if (GuiButton((Rectangle){320, 20, 140, 30}, "Stop Game")) // Geser ke kanan
+			{
+				startgame = false; // Mengubah nilai ke false untuk menghentikan game
+			}
+			if (GuiButton((Rectangle){245, 60, 140, 30}, "Random Mize")) // Tambahan tombol di bawah
+			{
+				// Tambahkan fungsi random di sini
+			}
 			GuiUnlock();
 			// GUI: Dialog Window
 			//--------------------------------------------------------------------------------
