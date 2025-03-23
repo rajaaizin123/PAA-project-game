@@ -11,8 +11,8 @@
 
 ## Running Game
 * Masuk ke folder **bin**  
-* Lanjut ke folder **Debug** 🚀
-* Cari file dengan nama c.exe dan Jalankan 
+* Lanjut ke folder **Debug** 
+* Cari file dengan nama c.exe dan Jalankan 🚀
 
 
 
