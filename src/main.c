@@ -119,7 +119,7 @@ int main ()
 					KurirPos.y += 5; // Gerak bawah
 			}
 
-			if (!startgame)
+			if (startgame)
 			{
 				// Tampilan awal sebelum game dimulai
 				DrawText("Kurir Smart", screenWidth / 2 - 50, screenHeight / 2 - 50, 20, DARKGRAY);
@@ -133,11 +133,12 @@ int main ()
 
 				DrawTriangle(v1, v2, v3, BLUE); // Warna segitiga biru
 			}
+			// GUI File Dialog
+			if (fileDialogState.windowActive)
+				GuiLock();
 
-			GuiUnlock();
-			// GUI: Dialog Window
-			//--------------------------------------------------------------------------------
 			GuiWindowFileDialog(&fileDialogState);
+			GuiUnlock();
 			//--------------------------------------------------------------------------------
 		
 			//----------------------------------------------------------------------------------
