@@ -107,18 +107,9 @@ int main()
 
 			if (GuiButton((Rectangle){20, 20, 140, 30}, GuiIconText(ICON_FILE_OPEN, "Pilih Map")))
 				fileDialogState.windowActive = true;
-			// Gambar Tombol "Start Game" di tengah layar
-			if (GuiButton((Rectangle){screenWidth / 2 - 70, screenHeight / 2 - 20, 140, 40}, "Start Game"))
-			{
+
+			if (GuiButton((Rectangle){180, 20, 140, 30}, "Start Game"))
 				startgame = true;
-			}
-
-			// Jika tombol ditekan, tampilkan pesan
-			if (startgame)
-			{
-				DrawText("Game Dimulai!", screenWidth / 2 - 50, screenHeight / 2 + 50, 20, RED);
-			}
-
 			GuiUnlock();
 			// GUI: Dialog Window
 			//--------------------------------------------------------------------------------
@@ -142,7 +133,7 @@ int main()
 
 		EndDrawing();
 	}
-	
+
 	// cleanup
 	// unload our texture so it can be cleaned up
 	UnloadTexture(map_texture);
