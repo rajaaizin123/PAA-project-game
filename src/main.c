@@ -99,14 +99,13 @@ int main ()
 			if (GuiButton((Rectangle){ 20, 20, 140, 30 }, GuiIconText(ICON_FILE_OPEN, "Pilih Map"))){
 				fileDialogState.windowActive = true;
 			}
-			if (!startgame)
+			
+			// jika tombol start ditekan
+			if (GuiButton((Rectangle){screenWidth / 2 - 70, screenHeight / 2 - 15, 140, 30}, "Start Game"))
 			{
-				// jika tombol start ditekan
-				if (GuiButton((Rectangle){screenWidth / 2 - 70, screenHeight / 2 - 15, 140, 30}, "Start Game"))
-				{
-					startgame = true;
-				}
+				startgame = true;
 			}
+			
 			else
 			{
 				// Kontrol pergerakan kurir (segitiga) dengan tombol panah
@@ -119,8 +118,6 @@ int main ()
 				if (IsKeyDown(KEY_DOWN) && KurirPos.y < screenHeight - 20)
 					KurirPos.y += 5; // Gerak bawah
 			}
-			BeginDrawing();
-			ClearBackground(RAYWHITE); // Bersihkan layar dengan warna putih
 
 			if (!startgame)
 			{
