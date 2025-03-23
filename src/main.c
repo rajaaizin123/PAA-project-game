@@ -57,7 +57,7 @@ int main ()
 
 
 		if (currentScreen == MENU_STATE){
-			if (GuiButton((Rectangle){screenWidth / 2 - 50, screenHeight / 2 - 20, 100, 40}, "START")){
+			if (GuiButton((Rectangle){screenWidth / 2 - 50, screenHeight / 2 - 20, 100, 40}, "PLAY THE GAME")){
 				currentScreen = GAME_STATE;
 			}
 		}else if (currentScreen == GAME_STATE){
