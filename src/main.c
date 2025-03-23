@@ -111,7 +111,6 @@ int main()
 			if (GuiButton((Rectangle){170, 20, 140, 30}, "Start Game"))
 			{
 				startgame = true;
-				printf("Start Game ditekan!\n"); // Debugging
 			}
 			GuiUnlock();
 			// GUI: Dialog Window
