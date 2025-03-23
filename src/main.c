@@ -97,15 +97,8 @@ int main()
 				fileDialogState.SelectFilePressed = false;
 			}
 
-			// Gambar Map jika ada
-			if (map_texture.id != 0)
-			{
-				DrawTexture(map_texture, GetScreenWidth() / 2 - map_texture.width / 2,
-							GetScreenHeight() / 2 - map_texture.height / 2 + 10, WHITE);
-				DrawRectangleLines(GetScreenWidth() / 2 - map_texture.width / 2,
-								   GetScreenHeight() / 2 - map_texture.height / 2 + 10,
-								   map_texture.width, map_texture.height, BLACK);
-			}
+			DrawTexture(map_texture, GetScreenWidth() / 2 - map_texture.width / 2, GetScreenHeight() / 2 - map_texture.height / 2 + 10, WHITE);
+			DrawRectangleLines(GetScreenWidth() / 2 - map_texture.width / 2, GetScreenHeight() / 2 - map_texture.height / 2 + 10, map_texture.width, map_texture.height, BLACK);
 
 			// DrawText(namaFileGambar, 208, GetScreenHeight() - 20, 10, GRAY);
 
