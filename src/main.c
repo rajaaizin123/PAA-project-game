@@ -59,6 +59,7 @@ int main()
 
 		// Setup the back buffer for drawing (clear color and depth buffers)
 		ClearBackground(BLACK);
+		ClearBackground(RAYWHITE); // Pastikan background tidak menutupi tombol
 
 		if (currentScreen == MENU_STATE)
 		{
