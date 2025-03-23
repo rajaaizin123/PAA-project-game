@@ -58,8 +58,7 @@ int main()
 		BeginDrawing();
 
 		// Setup the back buffer for drawing (clear color and depth buffers)
-		ClearBackground(BLACK);
-		ClearBackground(RAYWHITE); // Pastikan background tidak menutupi tombol
+		ClearBackground(RAYWHITE);
 
 		if (currentScreen == MENU_STATE)
 		{
@@ -108,9 +107,12 @@ int main()
 
 			if (GuiButton((Rectangle){20, 20, 140, 30}, GuiIconText(ICON_FILE_OPEN, "Pilih Map")))
 				fileDialogState.windowActive = true;
-
-			if (GuiButton((Rectangle){180, 20, 140, 30}, "Start Game"))
+			// Tombol Start Game
+			if (GuiButton((Rectangle){170, 20, 140, 30}, "Start Game"))
+			{
 				startgame = true;
+				printf("Start Game ditekan!\n"); // Debugging
+			}
 			GuiUnlock();
 			// GUI: Dialog Window
 			//--------------------------------------------------------------------------------
