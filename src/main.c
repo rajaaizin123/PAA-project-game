@@ -96,9 +96,47 @@ int main ()
 				
 			if (fileDialogState.windowActive) GuiLock();
 		
-			if (GuiButton((Rectangle){ 20, 20, 140, 30 }, GuiIconText(ICON_FILE_OPEN, "Pilih Map"))) 
+			if (GuiButton((Rectangle){ 20, 20, 140, 30 }, GuiIconText(ICON_FILE_OPEN, "Pilih Map"))){
 				fileDialogState.windowActive = true;
-		
+			}
+			if (!startgame)
+			{
+				// jika tombol start ditekan
+				if (GuiButton((Rectangle){screenWidth / 2 - 70, screenHeight / 2 - 15, 140, 30}, "Start Game"))
+				{
+					startgame = true;
+				}
+			}
+			else
+			{
+				// Kontrol pergerakan kurir (segitiga) dengan tombol panah
+				if (IsKeyDown(KEY_RIGHT) && KurirPos.x < screenWidth - 20)
+					KurirPos.x += 5; // Gerak kanan
+				if (IsKeyDown(KEY_LEFT) && KurirPos.x > 20)
+					KurirPos.x -= 5; // Gerak kiri
+				if (IsKeyDown(KEY_UP) && KurirPos.y > 20)
+					KurirPos.y -= 5; // Gerak atas
+				if (IsKeyDown(KEY_DOWN) && KurirPos.y < screenHeight - 20)
+					KurirPos.y += 5; // Gerak bawah
+			}
+			BeginDrawing();
+			ClearBackground(RAYWHITE); // Bersihkan layar dengan warna putih
+
+			if (!startgame)
+			{
+				// Tampilan awal sebelum game dimulai
+				DrawText("Kurir Smart", screenWidth / 2 - 50, screenHeight / 2 - 50, 20, DARKGRAY);
+			}
+			else
+			{
+				// Menggambar karakter kurir sebagai segitiga siku-siku
+				Vector2 v1 = {KurirPos.x, KurirPos.y - 20};		 // Puncak atas segitiga
+				Vector2 v2 = {KurirPos.x - 20, KurirPos.y + 20}; // Kiri bawah
+				Vector2 v3 = {KurirPos.x + 20, KurirPos.y + 20}; // Kanan bawah
+
+				DrawTriangle(v1, v2, v3, BLUE); // Warna segitiga biru
+			}
+
 			GuiUnlock();
 			// GUI: Dialog Window
 			//--------------------------------------------------------------------------------
@@ -126,44 +164,7 @@ int main ()
 
 		EndDrawing();
 	}
-	while (!WindowShouldClose())
-	{
-		if(!startgame){
-			// jika tombol start ditekan
-			if(GuiButton((Rectangle){ screenWidth / 2 - 70 , screenHeight / 2 - 15, 140,30 }, "Start Game")){
-				startgame = true;
-			}
-		}else{
-			// Kontrol pergerakan kurir (segitiga) dengan tombol panah
-			if (IsKeyDown(KEY_RIGHT) && KurirPos.x < screenWidth - 20)
-				KurirPos.x += 5; // Gerak kanan
-			if (IsKeyDown(KEY_LEFT) && KurirPos.x > 20)
-				KurirPos.x -= 5; // Gerak kiri
-			if (IsKeyDown(KEY_UP) && KurirPos.y > 20)
-				KurirPos.y -= 5; // Gerak atas
-			if (IsKeyDown(KEY_DOWN) && KurirPos.y < screenHeight - 20)
-				KurirPos.y += 5; // Gerak bawah
-		}
-		BeginDrawing();
-		ClearBackground(RAYWHITE); // Bersihkan layar dengan warna putih
-
-		if (!startgame)
-		{
-			// Tampilan awal sebelum game dimulai
-			DrawText("Kurir Smart", screenWidth / 2 - 50, screenHeight / 2 - 50, 20, DARKGRAY);
-		}
-		else
-		{
-			// Menggambar karakter kurir sebagai segitiga siku-siku
-			Vector2 v1 = {KurirPos.x, KurirPos.y - 20};		 // Puncak atas segitiga
-			Vector2 v2 = {KurirPos.x - 20, KurirPos.y + 20}; // Kiri bawah
-			Vector2 v3 = {KurirPos.x + 20, KurirPos.y + 20}; // Kanan bawah
-
-			DrawTriangle(v1, v2, v3, BLUE); // Warna segitiga biru
-		}
-
-		EndDrawing();
-	}
+	
 
 	// cleanup
 	// unload our texture so it can be cleaned up
