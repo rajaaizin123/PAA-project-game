@@ -116,7 +116,7 @@ int main()
 			{
 				startgame = false; // Mengubah nilai ke false untuk menghentikan game
 			}
-			if (GuiButton((Rectangle){245, 60, 140, 30}, "Random Mize")) // Tambahan tombol di bawah
+			if (GuiButton((Rectangle){470, 20, 140, 30}, "Random Mize")) // Tambahan tombol di bawah
 			{
 				// Tambahkan fungsi random di sini
 			}
