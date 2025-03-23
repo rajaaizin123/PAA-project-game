@@ -58,7 +58,7 @@ int main()
 		BeginDrawing();
 
 		// Setup the back buffer for drawing (clear color and depth buffers)
-		ClearBackground(RAYWHITE);
+		ClearBackground(BLACK);
 
 		if (currentScreen == MENU_STATE)
 		{
