@@ -13,6 +13,10 @@
 #define GUI_WINDOW_FILE_DIALOG_IMPLEMENTATION
 #include "gui_window_file_dialog.h"
 
+#define MAKS_KURIR 10
+#define OFFSET_X 50
+#define OFFSET_Y 70
+
 typedef enum
 {
 	MENU_STATE,
@@ -20,6 +24,25 @@ typedef enum
 } GameState;
 
 void resizeImage();
+
+Vector2 RandomizePosisiKurir(Image map) {
+	int percobaan = 0, max_percobaan = 100;
+
+    while (percobaan < max_percobaan) {
+        int rx = GetRandomValue(0, map.width - 1);
+        int ry = GetRandomValue(0, map.height - 1);
+
+        Color pixel = GetImageColor(map, rx, ry);
+        // Cek apakah posisi ini sudah dipakai
+        if (pixel.r == 83 && pixel.g == 119 && pixel.b == 94) {
+            return (Vector2){rx + OFFSET_X, ry + OFFSET_Y};
+        }
+
+		percobaan++;
+    }
+
+	return (Vector2){-1, -1};
+}
 
 int main()
 {
@@ -30,7 +53,8 @@ int main()
 
 	// cek game sudah dimulai apa belum
 	bool startgame = false;
-	Vector2 KurirPos = {screenWidth / 2, screenHeight / 2}; // posisi awal
+	Vector2 KurirPos[MAKS_KURIR];
+	int posisi_terisi = 0;
 
 	SetConfigFlags(FLAG_VSYNC_HINT | FLAG_WINDOW_HIGHDPI);
 
@@ -41,6 +65,10 @@ int main()
 
 	// “Start” button
 	// Rectangle startButton = {screenWidth / 2 - 100, screenHeight / 2 - 30, 200, 60};
+	bool button_start = false;
+	bool button_stop = false;
+	bool button_random = false;
+
 
 	// dirselector (handle upload png)
 	GuiWindowFileDialogState fileDialogState = InitGuiWindowFileDialog(GetWorkingDirectory());
@@ -97,8 +125,8 @@ int main()
 				fileDialogState.SelectFilePressed = false;
 			}
 
-			DrawTexture(map_texture, GetScreenWidth() / 2 - map_texture.width / 2, GetScreenHeight() / 2 - map_texture.height / 2+20 , WHITE);
-			DrawRectangleLines(GetScreenWidth() / 2 - map_texture.width / 2, GetScreenHeight() / 2 - map_texture.height / 2 + 20, map_texture.width, map_texture.height, BLACK);
+			//DrawTexture(map_texture, GetScreenWidth() / 2 - map.width / 2, GetScreenHeight() / 2 - map.height / 2+20 , WHITE);
+			DrawTexture(map_texture, OFFSET_X, OFFSET_Y, WHITE);
 
 			// DrawText(namaFileGambar, 208, GetScreenHeight() - 20, 10, GRAY);
 
@@ -108,18 +136,31 @@ int main()
 			if (GuiButton((Rectangle){20, 20, 140, 30}, GuiIconText(ICON_FILE_OPEN, "Pilih Map")))
 				fileDialogState.windowActive = true;
 			// Tombol Start Game
-			if (GuiButton((Rectangle){170, 20, 140, 30}, "Start Game"))
+
+			// deklarasi button
+			button_start = GuiButton((Rectangle){170, 20, 140, 30}, "Start Game");
+			button_stop = GuiButton((Rectangle){320, 20, 140, 30}, "Stop Game");
+			button_random = GuiButton((Rectangle){470, 20, 140, 30}, "Random Mize");
+
+			if (button_start)
 			{
 				startgame = true;
 			}
-			if (GuiButton((Rectangle){320, 20, 140, 30}, "Stop Game")) // Geser ke kanan
+			if (button_stop) // Geser ke kanan
 			{
 				startgame = false; // Mengubah nilai ke false untuk menghentikan game
 			}
-			if (GuiButton((Rectangle){470, 20, 140, 30}, "Random Mize")) // Tambahan tombol di bawah
+
+			static Vector2 titik_aspal = {-1, -1};
+			if (button_random) // Tambahan tombol di bawah
 			{
-				// Tambahkan fungsi random di sini
+				titik_aspal = RandomizePosisiKurir(map);
 			}
+
+			if (titik_aspal.x != -1 && titik_aspal.y != -1) {
+				DrawRectangle(titik_aspal.x, titik_aspal.y, 10, 10, WHITE);
+			}
+
 			GuiUnlock();
 			// GUI: Dialog Window
 			//--------------------------------------------------------------------------------
@@ -133,12 +174,18 @@ int main()
 			// GuiButton((Rectangle){ 50, 50, 150, 40 }, "Open File");
 
 			// proses...  cek warna pada tiap posisi pixel
-			// Color pixelColor = GetImageColor(map, 60, 60);
+			int mapPosX = GetScreenWidth() / 2 - map_texture.width / 2;
+			int mapPosY = GetScreenHeight() / 2 - map_texture.height / 2 + 20;
+			int pixelX = 290 - mapPosX;
+			int pixelY = 400 - mapPosY;
+
+			// DrawRectangle(250, 400, 10, 10, WHITE);
+			// Color pixelColor = GetImageColor(map, 250, 400);
 			// printf("Kode merah %d\n", pixelColor.r);
 			// printf("Kode hijau %d\n", pixelColor.g);
 			// printf("Kode biru %d\n", pixelColor.b);
 
-			// DrawTexture(mapTexture, 50, 50, WHITE);
+			
 		}
 
 		EndDrawing();
