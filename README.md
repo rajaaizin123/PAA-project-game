@@ -7,8 +7,9 @@
 * Raja Aizin Nofrizivaldy -  2301020027
 * Cahyadi Prasetyo - 2301020005
 * Hermawan - 2301020025
-* Jovic Khidir - Evta 2301020030
 * Tommy Susanto - 2301020033
+* Jovic Khidir Evta - 2301020030
+  
 
 ## Running Game
 * Masuk ke folder **bin**  
