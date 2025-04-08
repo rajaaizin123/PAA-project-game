@@ -14,7 +14,8 @@
 ## Running Game
 * Masuk ke folder **bin**  
 * Lanjut ke folder **Debug** 
-* Cari file dengan nama c.exe dan Jalankan 🚀
+* Cari file dengan nama c.exe dan Jalankan 🚀 atau
+* .\bin\Debug\c.exe
 
 
 
