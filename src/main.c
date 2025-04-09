@@ -25,7 +25,7 @@ typedef enum
 
 void resizeImage();
 
-Vector2 RandomizePosisiKurir(Image map) {
+Vector2 RandomizePosisi(Image map) {
 	int percobaan = 0, max_percobaan = 100;
 
     while (percobaan < max_percobaan) {
@@ -33,15 +33,45 @@ Vector2 RandomizePosisiKurir(Image map) {
         int ry = GetRandomValue(0, map.height - 1);
 
         Color pixel = GetImageColor(map, rx, ry);
-        // Cek apakah posisi ini sudah dipakai
         if (pixel.r == 83 && pixel.g == 119 && pixel.b == 94) {
-            return (Vector2){rx + OFFSET_X, ry + OFFSET_Y};
+            return (Vector2){rx, ry};
         }
 
 		percobaan++;
     }
 
 	return (Vector2){-1, -1};
+}
+
+Vector2 PosisiValid(Image map, Image ukuran, Vector2 posisi_awal){
+	// ambil warna
+	Color pixel_patokan_kanan;
+	int iterasi_pixel = ukuran.width;
+	int pixel_outline_x = 0;
+	for (int i = 1; i <= ukuran.width; i++){
+		// titik ini dari sudut pandang gambar
+		pixel_patokan_kanan = GetImageColor(map, posisi_awal.x + iterasi_pixel, posisi_awal.y);
+		if (pixel_patokan_kanan.r == 83 && pixel_patokan_kanan.g == 119 && pixel_patokan_kanan.b == 94){
+			break;
+		}
+
+		iterasi_pixel--;
+		pixel_outline_x = i;
+	}
+
+	// cek bawah
+	Color pixel_patokan_bawah;
+	iterasi_pixel = ukuran.height;
+	int pixel_outline_y = 0;
+	for (int i = 1; i <= ukuran.height; i++){
+		pixel_patokan_bawah = GetImageColor(map, posisi_awal.x, posisi_awal.y + iterasi_pixel);
+		if (pixel_patokan_bawah.r == 83 && pixel_patokan_bawah.g == 119 && pixel_patokan_bawah.b == 94){
+			break;
+		}
+		iterasi_pixel--;
+		pixel_outline_y = i;
+	}
+	return (Vector2){pixel_outline_x, pixel_outline_y};
 }
 
 int main()
@@ -53,8 +83,6 @@ int main()
 
 	// cek game sudah dimulai apa belum
 	bool startgame = false;
-	Vector2 KurirPos[MAKS_KURIR];
-	int posisi_terisi = 0;
 
 	SetConfigFlags(FLAG_VSYNC_HINT | FLAG_WINDOW_HIGHDPI);
 
@@ -74,7 +102,16 @@ int main()
 	GuiWindowFileDialogState fileDialogState = InitGuiWindowFileDialog(GetWorkingDirectory());
 	char namaFileGambar[512] = {0};
 	Texture map_texture = {0};
-	Image map;
+	Image map, kurir;
+	
+	Vector2 kurir_rorr = {-1, -1};
+	Vector2 source = {-1, -1};
+	Vector2 destination = {-1, -1};
+	Vector2 outline = {-1, -1};
+
+	// load gambar kurir
+	kurir = LoadImage("resources/kurir_baru.png");
+	Texture2D kurir_texture = LoadTextureFromImage(kurir);
 
 	// Utility function from resource_dir.h to find the resources folder and set it as the current working directory so we can load from it
 	SearchAndSetResourceDir("resources");
@@ -88,20 +125,15 @@ int main()
 		// Setup the back buffer for drawing (clear color and depth buffers)
 		ClearBackground(BLACK);
 
-		if (currentScreen == MENU_STATE)
-		{
-			if (GuiButton((Rectangle){screenWidth / 2 - 50, screenHeight / 2 - 20, 100, 40}, "PLAY THE GAME"))
-			{
+		if (currentScreen == MENU_STATE){
+			if (GuiButton((Rectangle){screenWidth / 2 - 50, screenHeight / 2 - 20, 100, 40}, "PLAY THE GAME")){
 				currentScreen = GAME_STATE;
 			}
 		}
-		else if (currentScreen == GAME_STATE)
-		{
-			if (fileDialogState.SelectFilePressed)
-			{
+		else if (currentScreen == GAME_STATE){
+			if (fileDialogState.SelectFilePressed){
 				// Load image file (if supported extension)
-				if (IsFileExtension(fileDialogState.fileNameText, ".png"))
-				{
+				if (IsFileExtension(fileDialogState.fileNameText, ".png")){
 					// gabung direktori dan nama file
 					strcpy(namaFileGambar, TextFormat("%s" PATH_SEPERATOR "%s", fileDialogState.dirPathText, fileDialogState.fileNameText));
 
@@ -111,12 +143,10 @@ int main()
 
 					// Load image
 					map = LoadImage(namaFileGambar);
-					if (map.data == NULL)
-					{
+					if (map.data == NULL){
 						printf("Gagal load gambar.\n");
 					}
-					else
-					{
+					else{
 						UnloadTexture(map_texture);
 						map_texture = LoadTextureFromImage(map);
 					}
@@ -125,10 +155,7 @@ int main()
 				fileDialogState.SelectFilePressed = false;
 			}
 
-			//DrawTexture(map_texture, GetScreenWidth() / 2 - map.width / 2, GetScreenHeight() / 2 - map.height / 2+20 , WHITE);
 			DrawTexture(map_texture, OFFSET_X, OFFSET_Y, WHITE);
-
-			// DrawText(namaFileGambar, 208, GetScreenHeight() - 20, 10, GRAY);
 
 			if (fileDialogState.windowActive)
 				GuiLock();
@@ -142,49 +169,100 @@ int main()
 			button_stop = GuiButton((Rectangle){320, 20, 140, 30}, "Stop Game");
 			button_random = GuiButton((Rectangle){470, 20, 140, 30}, "Random Mize");
 
-			if (button_start)
-			{
+			if (button_start){
 				startgame = true;
 			}
-			if (button_stop) // Geser ke kanan
-			{
+			if (button_stop) {
 				startgame = false; // Mengubah nilai ke false untuk menghentikan game
 			}
 
-			static Vector2 titik_aspal = {-1, -1};
-			if (button_random) // Tambahan tombol di bawah
-			{
-				titik_aspal = RandomizePosisiKurir(map);
-			}
 
-			if (titik_aspal.x != -1 && titik_aspal.y != -1) {
-				DrawRectangle(titik_aspal.x, titik_aspal.y, 10, 10, WHITE);
+			if (button_random) {
+				kurir_rorr = RandomizePosisi(map);
+				source = RandomizePosisi(map);
+
+				if (source.x == kurir_rorr.x && source.y == kurir_rorr.y){
+					source = RandomizePosisi(map);
+				}
+
+				destination = RandomizePosisi(map);
+
+				if ((destination.x == source.x && destination.y == source.x) || (destination.x == kurir_rorr.x && destination.y == kurir_rorr.y)){
+					destination = RandomizePosisi(map);
+				}
 			}
+			
+
+			if (kurir_rorr.x != -1 && kurir_rorr.y != -1){
+				outline = PosisiValid(map, kurir, kurir_rorr);
+				DrawTexture(kurir_texture, kurir_rorr.x - outline.x + OFFSET_X, kurir_rorr.y - outline.y + OFFSET_Y, WHITE);
+
+				outline = PosisiValid(map, kurir, source);
+				DrawRectangle(source.x + OFFSET_X - outline.x, source.y + OFFSET_Y - outline.y, 20, 20, YELLOW);
+
+				outline = PosisiValid(map, kurir, destination);
+				DrawRectangle(destination.x + OFFSET_X - outline.x, destination.y + OFFSET_Y - outline.y, 20, 20, RED);
+				
+
+				// // ambil warna
+				// Color pixel_patokan_kanan;
+				// int iterasi_pixel = kurir.width;
+				// int pixel_outline_x = 0;
+				// for (int i = 1; i <= kurir.width; i++){
+				// 	// titik ini dari sudut pandang gambar
+				// 	pixel_patokan_kanan = GetImageColor(map, titik_aspal.x + iterasi_pixel, titik_aspal.y);
+				// 	if (pixel_patokan_kanan.r == 83 && pixel_patokan_kanan.g == 119 && pixel_patokan_kanan.b == 94){
+				// 		break;
+				// 	}
+
+				// 	iterasi_pixel--;
+				// 	pixel_outline_x = i;
+				// }
+
+				// // cek bawah
+				// Color pixel_patokan_bawah;
+				// iterasi_pixel = kurir.height;
+				// int pixel_outline_y = 0;
+				// for (int i = 1; i <= kurir.height; i++){
+				// 	pixel_patokan_bawah = GetImageColor(map, titik_aspal.x, titik_aspal.y + iterasi_pixel);
+				// 	if (pixel_patokan_bawah.r == 83 && pixel_patokan_bawah.g == 119 && pixel_patokan_bawah.b == 94){
+				// 		break;
+				// 	}
+
+				// 	iterasi_pixel--;
+				// 	pixel_outline_y = i;
+				// }
+
+
+				// cek posisi dan warnanya
+				// Color pixelColor = GetImageColor(map, titik_aspal.x - OFFSET_X, titik_aspal.y - OFFSET_Y);
+				// printf("Posisi anda x: %d  y: %d\n", titik_aspal.x, titik_aspal.y);
+				// printf("Kode merah %d\n", pixel_patokan_kanan.r);
+				// printf("Kode hijau %d\n", pixel_patokan_kanan.g);
+				// printf("Kode biru %d\n", pixel_patokan_kanan.b);
+				// //printf("pixel outline: %d\n", pixel_outline);
+				// DrawTexture(kurir_texture, titik_aspal.x + OFFSET_X - pixel_outline_x , titik_aspal.y + OFFSET_Y - pixel_outline_y, WHITE);
+
+
+
+				// cek kanan
+				// if ((pixel_patokan_kanan.r != 83 && pixel_patokan_kanan.g != 119 && pixel_patokan_kanan.b != 94) &&// cek kanan
+				// 	(pixel_patokan_kiri.r  != 83 && pixel_patokan_kiri.g  != 119 && pixel_patokan_kiri.b  != 94) &&
+				// 	(pixel_patokan_bawah.r != 83 && pixel_patokan_bawah.g != 119 && pixel_patokan_bawah.b != 94) && // cek bawah
+				// 	(pixel_patokan_atas.r  != 83 && pixel_patokan_atas.g  != 119 && pixel_patokan_atas.b  != 94)// cek atas
+					
+				// 	){
+				// 	DrawTexture(kurir_texture, titik_aspal.x, titik_aspal.y, WHITE);
+				// }
+
+
+			}
+			
 
 			GuiUnlock();
 			// GUI: Dialog Window
 			//--------------------------------------------------------------------------------
 			GuiWindowFileDialog(&fileDialogState);
-			//--------------------------------------------------------------------------------
-
-			//----------------------------------------------------------------------------------
-
-			// draw our texture to the screen
-			// DrawTexture(wabbit, 50, 50, WHITE);
-			// GuiButton((Rectangle){ 50, 50, 150, 40 }, "Open File");
-
-			// proses...  cek warna pada tiap posisi pixel
-			int mapPosX = GetScreenWidth() / 2 - map_texture.width / 2;
-			int mapPosY = GetScreenHeight() / 2 - map_texture.height / 2 + 20;
-			int pixelX = 290 - mapPosX;
-			int pixelY = 400 - mapPosY;
-
-			// DrawRectangle(250, 400, 10, 10, WHITE);
-			// Color pixelColor = GetImageColor(map, 250, 400);
-			// printf("Kode merah %d\n", pixelColor.r);
-			// printf("Kode hijau %d\n", pixelColor.g);
-			// printf("Kode biru %d\n", pixelColor.b);
-
 			
 		}
 
@@ -194,6 +272,7 @@ int main()
 	// cleanup
 	// unload our texture so it can be cleaned up
 	UnloadTexture(map_texture);
+	UnloadTexture(kurir_texture);
 
 	// destroy the window and cleanup the OpenGL context
 	CloseWindow();
