@@ -49,7 +49,7 @@ Vector2 PosisiValid(Image map, Image ukuran, Vector2 posisi_awal){
 	int iterasi_pixel = ukuran.width;
 	int pixel_outline_x = 0;
 	for (int i = 1; i <= ukuran.width; i++){
-		// titik ini dari sudut pandang gambar
+		// titik ini dzari sudut pandang gambar
 		pixel_patokan_kanan = GetImageColor(map, posisi_awal.x + iterasi_pixel, posisi_awal.y);
 		if (pixel_patokan_kanan.r == 83 && pixel_patokan_kanan.g == 119 && pixel_patokan_kanan.b == 94){
 			break;
@@ -110,7 +110,7 @@ int main()
 	Vector2 outline = {-1, -1};
 
 	// load gambar kurir
-	kurir = LoadImage("resources/kurir_baru.png");
+	kurir = LoadImage("resources/kurir_new2.png");
 	Texture2D kurir_texture = LoadTextureFromImage(kurir);
 
 	// Utility function from resource_dir.h to find the resources folder and set it as the current working directory so we can load from it
@@ -176,7 +176,17 @@ int main()
 				startgame = false; // Mengubah nilai ke false untuk menghentikan game
 			}
 
+			// int frame = 1;
+			// while (frame <= 20 && (startgame == true))
+			// {
+			// 	if (kurir_rorr.x == 1000){
+			// 		kurir_rorr.x = kurir_rorr.x - 1000;
+			// 	}
 
+			// 	kurir_rorr.x++;
+			// 	frame++;
+			// }
+			
 			if (button_random) {
 				kurir_rorr = RandomizePosisi(map);
 				source = RandomizePosisi(map);
@@ -203,36 +213,6 @@ int main()
 				outline = PosisiValid(map, kurir, destination);
 				DrawRectangle(destination.x + OFFSET_X - outline.x, destination.y + OFFSET_Y - outline.y, 20, 20, RED);
 				
-
-				// // ambil warna
-				// Color pixel_patokan_kanan;
-				// int iterasi_pixel = kurir.width;
-				// int pixel_outline_x = 0;
-				// for (int i = 1; i <= kurir.width; i++){
-				// 	// titik ini dari sudut pandang gambar
-				// 	pixel_patokan_kanan = GetImageColor(map, titik_aspal.x + iterasi_pixel, titik_aspal.y);
-				// 	if (pixel_patokan_kanan.r == 83 && pixel_patokan_kanan.g == 119 && pixel_patokan_kanan.b == 94){
-				// 		break;
-				// 	}
-
-				// 	iterasi_pixel--;
-				// 	pixel_outline_x = i;
-				// }
-
-				// // cek bawah
-				// Color pixel_patokan_bawah;
-				// iterasi_pixel = kurir.height;
-				// int pixel_outline_y = 0;
-				// for (int i = 1; i <= kurir.height; i++){
-				// 	pixel_patokan_bawah = GetImageColor(map, titik_aspal.x, titik_aspal.y + iterasi_pixel);
-				// 	if (pixel_patokan_bawah.r == 83 && pixel_patokan_bawah.g == 119 && pixel_patokan_bawah.b == 94){
-				// 		break;
-				// 	}
-
-				// 	iterasi_pixel--;
-				// 	pixel_outline_y = i;
-				// }
-
 
 				// cek posisi dan warnanya
 				// Color pixelColor = GetImageColor(map, titik_aspal.x - OFFSET_X, titik_aspal.y - OFFSET_Y);
