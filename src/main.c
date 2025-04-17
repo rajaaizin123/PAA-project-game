@@ -10,8 +10,6 @@
 
 #include "../include/resource_dir.h" // utility header for SearchAndSetResourceDir
 
-#undef RAYGUI_IMPLEMENTATION // Avoid including raygui implementation again
-
 #define GUI_WINDOW_FILE_DIALOG_IMPLEMENTATION
 #include "gui_window_file_dialog.h"
 
@@ -20,15 +18,14 @@
 #define OFFSET_X 50
 #define OFFSET_Y 70
 
-
 // menambahkan fungsi unttuk membandingkan dua warna dengan toleransi
- bool isColorMatch(Color color1, Color color2, int tolerance){
-	int diffR = abs(color1.r - color2.r);
-	int diffG = abs(color1.g - color2.g);
- 	int diffB = abs(color1.b - color2.b);
+//  bool isColorMatch(Color color1, Color color2, int tolerance){
+// 	int diffR = abs(color1.r - color2.r);
+// 	int diffG = abs(color1.g - color2.g);
+//  	int diffB = abs(color1.b - color2.b);
 
- 	return diffR <= tolerance && diffG <= tolerance && diffB <=tolerance;
- }
+//  	return diffR <= tolerance && diffG <= tolerance && diffB <=tolerance;
+//  }
 typedef enum
 {
 	MENU_STATE,
@@ -42,22 +39,25 @@ typedef enum
 // } Vector2;
 
 void resizeImage();
-Vector2 RandomizePosisi(Image map){
-// Vector2 RandomizePosisi(Image map, Color targetcolor, int tolerance) {
+Vector2 RandomizePosisi(Image map)
+{
+	// Vector2 RandomizePosisi(Image map, Color targetcolor, int tolerance) {
 	int percobaan = 0, max_percobaan = 100;
 
-    while (percobaan < max_percobaan) {
-        int rx = GetRandomValue(0, map.width - 1);
-        int ry = GetRandomValue(0, map.height - 1);
+	while (percobaan < max_percobaan)
+	{
+		int rx = GetRandomValue(0, map.width - 1);
+		int ry = GetRandomValue(0, map.height - 1);
 
-        Color pixel = GetImageColor(map, rx, ry);
+		Color pixel = GetImageColor(map, rx, ry);
 		// if (pixel.r >= 70 && pixel.r <= 180 && pixel.g >= 70 && pixel.g <= 180 && pixel.b >= 70 && pixel.b <= 180){
-		if (pixel.r == 83 && pixel.g == 119 && pixel.b == 94){
+		if (pixel.r == 83 && pixel.g == 119 && pixel.b == 94)
+		{
 			return (Vector2){rx, ry};
 		}
 
 		percobaan++;
-    }
+	}
 
 	// for(int y = 0; y < map.height; y++){
 	// 	for(int x = 0; x < map.width; x++){
@@ -70,12 +70,14 @@ Vector2 RandomizePosisi(Image map){
 	return (Vector2){-1, -1};
 }
 
-Vector2 PosisiValid(Image map, Image ukuran, Vector2 posisi_awal){
+Vector2 PosisiValid(Image map, Image ukuran, Vector2 posisi_awal)
+{
 	// ambil warna
 	Color pixel_patokan_kanan;
 	int iterasi_pixel = ukuran.width;
 	int pixel_outline_x = 0;
-	for (int i = 1; i <= ukuran.width; i++){
+	for (int i = 1; i <= ukuran.width; i++)
+	{
 		// titik ini dari sudut pandang gambar
 		pixel_patokan_kanan = GetImageColor(map, posisi_awal.x + iterasi_pixel, posisi_awal.y);
 		// if (pixel_patokan_kanan.r >= 90 && pixel_patokan_kanan.r <= 150 && pixel_patokan_kanan.g >= 90 && pixel_patokan_kanan.g <= 150 && pixel_patokan_kanan.b >= 90 && pixel_patokan_kanan.b <= 150){
@@ -92,7 +94,8 @@ Vector2 PosisiValid(Image map, Image ukuran, Vector2 posisi_awal){
 	Color pixel_patokan_bawah;
 	iterasi_pixel = ukuran.height;
 	int pixel_outline_y = 0;
-	for (int i = 1; i <= ukuran.height; i++){
+	for (int i = 1; i <= ukuran.height; i++)
+	{
 		pixel_patokan_bawah = GetImageColor(map, posisi_awal.x, posisi_awal.y + iterasi_pixel);
 		// if (pixel_patokan_bawah.r >= 90 && pixel_patokan_bawah.r <= 150 && pixel_patokan_bawah.g >= 90 && pixel_patokan_bawah.g <= 150 && pixel_patokan_bawah.b >= 90 && pixel_patokan_bawah.b <= 150)
 		// {
@@ -109,9 +112,9 @@ Vector2 PosisiValid(Image map, Image ukuran, Vector2 posisi_awal){
 // Fungsi untuk menghitung arah pergerakan kurir ke arah tujuan
 // Vector2 MoveKurir(Vector2 kurir_pos, Vector2 target_pos, float speed)
 // {
-// 	float angle = atan2(target_pos.y - kurir_pos.y, target_pos.x - kurir_pos.x); 
-// 	kurir_pos.x += cos(angle) * speed;											
-// 	kurir_pos.y += sin(angle) * speed;										
+// 	float angle = atan2(target_pos.y - kurir_pos.y, target_pos.x - kurir_pos.x);
+// 	kurir_pos.x += cos(angle) * speed;
+// 	kurir_pos.y += sin(angle) * speed;
 // 	return kurir_pos;
 // }
 // Vector2 MoveKurir(Vector2 current, Vector2 target, float speed)
@@ -135,8 +138,8 @@ Vector2 PosisiValid(Image map, Image ukuran, Vector2 posisi_awal){
 // // Fungsi untuk menggambar kurir yang bergerak sepanjang jalur
 // void DrawKurirAlongPath(Vector2 kurir_pos, Vector2 target_pos, Texture2D kurir_texture, float speed)
 // {
-// 	kurir_pos = MoveKurir(kurir_pos, target_pos, speed);		 
-// 	DrawTexture(kurir_texture, kurir_pos.x, kurir_pos.y, WHITE); 
+// 	kurir_pos = MoveKurir(kurir_pos, target_pos, speed);
+// 	DrawTexture(kurir_texture, kurir_pos.x, kurir_pos.y, WHITE);
 // }
 int main()
 {
@@ -151,7 +154,6 @@ int main()
 	// cek game sudah dimulai apa belum
 	bool startgame = false;
 
-	
 	SetConfigFlags(FLAG_VSYNC_HINT | FLAG_WINDOW_HIGHDPI);
 
 	// set Frame FPS
@@ -183,7 +185,7 @@ int main()
 	Texture2D kurir_texture = LoadTextureFromImage(kurir);
 
 	// Utility function from resource_dir.h to find the resources folder and set it as the current working directory so we can load from it
-	SearchAndSetResourceDir("resources");  
+	SearchAndSetResourceDir("resources");
 
 	// game loop
 	while (!WindowShouldClose())
@@ -324,7 +326,6 @@ int main()
 
 				outline = PosisiValid(map, kurir, destination);
 				DrawRectangle(destination.x + OFFSET_X - outline.x, destination.y + OFFSET_Y - outline.y, 20, 20, RED);
-			
 
 				// // ambil warna
 				// Color pixel_patokan_kanan;
