@@ -17,6 +17,14 @@
 #define OFFSET_X 50
 #define OFFSET_Y 70
 
+// menambahkan fungsi unttuk membandingkan dua warna dengan toleransi
+//  bool isColorMatch(Color color1, Color color2, int tolerance){
+// 	int diffR = abs(color1.r - color2.r);
+// 	int diffG = abs(color1.g - color2.g);
+//  	int diffB = abs(color1.b - color2.b);
+
+//  	return diffR <= tolerance && diffG <= tolerance && diffB <=tolerance;
+//  }
 typedef enum
 {
 	MENU_STATE,
@@ -26,6 +34,7 @@ typedef enum
 void resizeImage();
 
 Vector2 RandomizePosisi(Image map) {
+	// Vector2 RandomizePosisi(Image map, Color targetcolor, int tolerance) {
 	int percobaan = 0, max_percobaan = 100;
 
     while (percobaan < max_percobaan) {
@@ -33,13 +42,21 @@ Vector2 RandomizePosisi(Image map) {
         int ry = GetRandomValue(0, map.height - 1);
 
         Color pixel = GetImageColor(map, rx, ry);
-        if (pixel.r == 83 && pixel.g == 119 && pixel.b == 94) {
+		// if (pixel.r >= 70 && pixel.r <= 180 && pixel.g >= 70 && pixel.g <= 180 && pixel.b >= 70 && pixel.b <= 180){
+		if (pixel.r == 83 && pixel.g == 119 && pixel.b == 94) {
             return (Vector2){rx, ry};
         }
 
 		percobaan++;
     }
-
+	// for(int y = 0; y < map.height; y++){
+	// 	for(int x = 0; x < map.width; x++){
+	// 		Color pixel = GetImageColor(map, x,y);
+	// 		if(isColorMatch(pixel, targetcolor, tolerance)){
+	// 			return(Vector2){x,y};
+	// 		}
+	// 	}
+	// }
 	return (Vector2){-1, -1};
 }
 
@@ -51,6 +68,7 @@ Vector2 PosisiValid(Image map, Image ukuran, Vector2 posisi_awal){
 	for (int i = 1; i <= ukuran.width; i++){
 		// titik ini dari sudut pandang gambar
 		pixel_patokan_kanan = GetImageColor(map, posisi_awal.x + iterasi_pixel, posisi_awal.y);
+		// if (pixel_patokan_kanan.r >= 90 && pixel_patokan_kanan.r <= 150 && pixel_patokan_kanan.g >= 90 && pixel_patokan_kanan.g <= 150 && pixel_patokan_kanan.b >= 90 && pixel_patokan_kanan.b <= 150){
 		if (pixel_patokan_kanan.r == 83 && pixel_patokan_kanan.g == 119 && pixel_patokan_kanan.b == 94){
 			break;
 		}
@@ -65,6 +83,7 @@ Vector2 PosisiValid(Image map, Image ukuran, Vector2 posisi_awal){
 	int pixel_outline_y = 0;
 	for (int i = 1; i <= ukuran.height; i++){
 		pixel_patokan_bawah = GetImageColor(map, posisi_awal.x, posisi_awal.y + iterasi_pixel);
+		// if (pixel_patokan_bawah.r >= 90 && pixel_patokan_bawah.r <= 150 && pixel_patokan_bawah.g >= 90 && pixel_patokan_bawah.g <= 150 && pixel_patokan_bawah.b >= 90 && pixel_patokan_bawah.b <= 150){
 		if (pixel_patokan_bawah.r == 83 && pixel_patokan_bawah.g == 119 && pixel_patokan_bawah.b == 94){
 			break;
 		}
@@ -74,12 +93,41 @@ Vector2 PosisiValid(Image map, Image ukuran, Vector2 posisi_awal){
 	return (Vector2){pixel_outline_x, pixel_outline_y};
 }
 
+// Fungsi untuk menghitung arah pergerakan kurir ke arah tujuan
+// Vector2 MoveKurir(Vector2 kurir_pos, Vector2 target_pos, float speed)
+// {
+// 	float angle = atan2(target_pos.y - kurir_pos.y, target_pos.x - kurir_pos.x);
+// 	kurir_pos.x += cos(angle) * speed;
+// 	kurir_pos.y += sin(angle) * speed;
+// 	return kurir_pos;
+// }
+// Vector2 MoveKurir(Vector2 current, Vector2 target, float speed)
+// {
+// 	Vector2 direction = {target.x - current.x, target.y - current.y};
+// 	float length = sqrtf(direction.x * direction.x + direction.y * direction.y);
+
+// 	if (length > 0)
+// 	{
+// 		direction.x /= length;
+// 		direction.y /= length;
+// 	}
+
+// 	Vector2 result = {
+// 		current.x + direction.x * speed,
+// 		current.y + direction.y * speed};
+
+// 	return result;
+// }
+
 int main()
 {
 	// Window Inilisiation
 	const int screenWidth = 1100;
 	const int screenHeight = 700;
 	InitWindow(screenWidth, screenHeight, "Smart Kurir");
+
+	// deklarasi warna target
+	Color targetcolor = (Color){0, 255, 0, 255}; // Misalnya warna hijau
 
 	// cek game sudah dimulai apa belum
 	bool startgame = false;
@@ -92,7 +140,7 @@ int main()
 	GameState currentScreen = MENU_STATE;
 
 	// “Start” button
-	// Rectangle startButton = {screenWidth / 2 - 100, screenHeight / 2 - 30, 200, 60};
+	// Rectangle rect_start = {screenWidth / 2 - 100, screenHeight / 2 - 30, 200, 60};
 	bool button_start = false;
 	bool button_stop = false;
 	bool button_random = false;
@@ -162,15 +210,48 @@ int main()
 
 			if (GuiButton((Rectangle){20, 20, 140, 30}, GuiIconText(ICON_FILE_OPEN, "Pilih Map")))
 				fileDialogState.windowActive = true;
-			// Tombol Start Game
 
 			// deklarasi button
 			button_start = GuiButton((Rectangle){170, 20, 140, 30}, "Start Game");
 			button_stop = GuiButton((Rectangle){320, 20, 140, 30}, "Stop Game");
 			button_random = GuiButton((Rectangle){470, 20, 140, 30}, "Random Mize");
 
-			if (button_start){
-				startgame = true;
+			// // Cek kalau mouse klik tombol
+			// if (CheckCollisionPointRec(GetMousePosition(), rect_start) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+			// {
+			// 	if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+			// 	{
+			// 		startgame = true;
+			// 		kurir_rorr = (Vector2){100, 100};
+			// 		source = (Vector2){400, 300};
+			// 	}
+			// }
+			// // Cek kalau mouse klik tombol
+			// if (CheckCollisionPointRec(GetMousePosition(), button_start))
+			// {
+			// 	if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+			// 	{
+			// 		startgame = true;
+			// 		kurir_rorr = (Vector2){100, 100};
+			// 		source = (Vector2){400, 300};
+			// 	}
+			// }
+
+			// Tombol Start Game
+			if (button_start && !startgame)
+			{
+				// Tombol Start ditekan, mulai permainan
+				// startgame = true;// 
+				// Tentukan posisi awal kurir (misalnya bisa ditentukan secara acak atau tetap)
+				// kurir_rorr = (Vector2){100, 100};					 // Posisi awal kurir
+				// source = RandomizePosisi(map, targetcolor, 10);		 // Posisi sumber
+				// destination = RandomizePosisi(map, targetcolor, 10); // Posisi tujuan
+
+				// // Tambahkan logika untuk menghindari overlap antara source dan destination
+				// while (destination.x == source.x && destination.y == source.y)
+				// {
+				// 	destination = RandomizePosisi(map, targetcolor, 10);
+				// }
 			}
 			if (button_stop) {
 				startgame = false; // Mengubah nilai ke false untuk menghentikan game
@@ -191,8 +272,38 @@ int main()
 					destination = RandomizePosisi(map);
 				}
 			}
-			
+			// if (button_random)
+			// {
+			// 	kurir_rorr = RandomizePosisi(map, targetcolor, 10);
+			// 	source = RandomizePosisi(map, targetcolor, 10);
+			// 	if (source.x == kurir_rorr.x && source.y == kurir_rorr.y)
+			// 	{
+			// 		source = RandomizePosisi(map, targetcolor, 10);
+			// 	}
 
+			// 	destination = RandomizePosisi(map, targetcolor, 10);
+
+			// 	if ((destination.x == source.x && destination.y == source.y) ||
+			// 		(destination.x == kurir_rorr.x && destination.y == kurir_rorr.y))
+			// 	{
+			// 		destination = RandomizePosisi(map, targetcolor, 10);
+			// 	}
+			// }
+
+			// 	if (source.x == kurir_rorr.x && source.y == kurir_rorr.y)
+			// 	{
+			// 		source = RandomizePosisi(map, targetcolor, 10);
+			// 	}
+
+			// 	destination = RandomizePosisi(map, targetcolor, 10);
+
+			// 	if ((destination.x == source.x && destination.y == source.y) ||
+			// 		(destination.x == kurir_rorr.x && destination.y == kurir_rorr.y))
+			// 	{
+			// 		destination = RandomizePosisi(map, targetcolor, 10);
+			// 	}
+			// }
+			
 			if (kurir_rorr.x != -1 && kurir_rorr.y != -1){
 				outline = PosisiValid(map, kurir, kurir_rorr);
 				DrawTexture(kurir_texture, kurir_rorr.x - outline.x + OFFSET_X, kurir_rorr.y - outline.y + OFFSET_Y, WHITE);
