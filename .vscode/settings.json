@@ -7,5 +7,14 @@
 		"**/.DS_Store": true,
 		"**/*.o": true,
 		"**/*.exe": true,
-	}
+	},
+	"files.associations": {
+		"*.embeddedhtml": "html",
+		"stdlib.h": "c",
+		"gui_window_file_dialog.h": "c",
+		"*.m": "c",
+		"cstdio": "c",
+		"functional": "c"
+	},
+	"cmake.sourceDirectory": "D:/PAA-project/c/build/external/raylib-master"
 }
