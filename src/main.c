@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <raymath.h>
+#include <stdint.h>
 
 #include "../include/resource_dir.h" // utility header for SearchAndSetResourceDir
 #include "gui_window_file_dialog.h"
@@ -23,7 +24,12 @@ typedef enum{
 	GAME_STATE
 } GameState;
 
-void resizeImage();
+typedef struct Vector_16{
+	uint16_t x;
+	uint16_t y;
+	uint16_t step;
+} Vector16;
+
 
 bool isWarnaAspal(Color pixel){
 	if ( (pixel.r >= 90 && pixel.r <= 150) && 
@@ -155,7 +161,97 @@ Vector2 posisiPojok(Vector2 current, unsigned char** dataJalan, int tinggi_map, 
     return (Vector2){-1, -1};
 }
 
-#define SIZE_MEMO 5
+Vector2 pojokMaya(Vector2 current, unsigned char** dataJalan, int tinggi_map, int lebar_map){
+	int cx = (int)current.x;
+	int cy = (int)current.y;
+
+	Vector16 atas = {cx, cy, 0}, bawah = {cx, cy, 0}, kiri = {cx, cy, 0}, kanan = {cx, cy, 0};
+	Vector16 kananAtas = {cx, cy, 0}, kananBawah = {cx, cy, 0};
+	Vector16 kiriAtas = {cx, cy, 0}, kiriBawah = {cx, cy, 0};
+
+	// Atas
+	for (int y = cy - 1; y >= 0; y--) {
+		if (dataJalan[y][cx] == '0') {
+			atas = (Vector16){cx, y, (uint16_t)(cy - y)};
+			break;
+		}
+	}
+
+	// Bawah
+	for (int y = cy + 1; y < tinggi_map; y++) {
+		if (dataJalan[y][cx] == '0') {
+			bawah = (Vector16){cx, y, (uint16_t)(y - cy)};
+			break;
+		}
+	}
+
+	// Kiri
+	for (int x = cx - 1; x >= 0; x--) {
+		if (dataJalan[cy][x] == '0') {
+			kiri = (Vector16){x, cy, (uint16_t)(cx - x)};
+			break;
+		}
+	}
+
+	// Kanan
+	for (int x = cx + 1; x < lebar_map; x++) {
+		if (dataJalan[cy][x] == '0') {
+			kanan = (Vector16){x, cy, (uint16_t)(x - cx)};
+			break;
+		}
+	}
+
+	// Kanan Atas ↗
+	for (int i = 1; cx + i < lebar_map && cy - i >= 0; i++) {
+		if (dataJalan[cy - i][cx + i] == '0') {
+			kananAtas = (Vector16){cx + i, cy - i, (uint16_t)i};
+			break;
+		}
+	}
+
+	// Kanan Bawah ↘
+	for (int i = 1; cx + i < lebar_map && cy + i < tinggi_map; i++) {
+		if (dataJalan[cy + i][cx + i] == '0') {
+			kananBawah = (Vector16){cx + i, cy + i, (uint16_t)i};
+			break;
+		}
+	}
+
+	// Kiri Atas ↖
+	for (int i = 1; cx - i >= 0 && cy - i >= 0; i++) {
+		if (dataJalan[cy - i][cx - i] == '0') {
+			kiriAtas = (Vector16){cx - i, cy - i, (uint16_t)i};
+			break;
+		}
+	}
+
+	// Kiri Bawah ↙
+	for (int i = 1; cx - i >= 0 && cy + i < tinggi_map; i++) {
+		if (dataJalan[cy + i][cx - i] == '0') {
+			kiriBawah = (Vector16){cx - i, cy + i, (uint16_t)i};
+			break;
+		}
+	}
+
+	// Cari yang step-nya paling besar
+	Vector16 kandidat[] = {atas, bawah, kiri, kanan, kananAtas, kananBawah, kiriAtas, kiriBawah};
+	Vector16 maksimal = kandidat[0];
+
+	for (int i = 1; i < 8; i++) {
+		if (kandidat[i].step > maksimal.step) {
+			maksimal = kandidat[i];
+		}
+	}
+
+	if (maksimal.step == 0) {
+		return (Vector2){-1, -1}; // Tidak ada jalan
+	}
+
+	return (Vector2){(float)maksimal.x, (float)maksimal.y};
+}
+
+
+#define SIZE_MEMO 100
 typedef struct {
 	int x[SIZE_MEMO];
 	int y[SIZE_MEMO];
@@ -428,12 +524,30 @@ int LawanArah(int arah) {
     }
 }
 
+Vector2 isi_path_arah_y(Vector2 current){
+	int x = (int)current.x;
+	int y = (int)current.y;
+
+	return (Vector2){x + 0, y - 1};
+}
+
+Vector2 isi_path_arah_x(Vector2 current){
+	int x = (int)current.x;
+	int y = (int)current.y;
+
+	return (Vector2){x + 1, y + 0};
+}
+
 // versi 0.3
 Vector2 GerakKurir(Vector2 target, Vector2 current, unsigned char** dataJalan, int *memo_arah, int speed, PosMemo *pos_memo, int *rotasi) {
     int x = (int)current.x;
     int y = (int)current.y;
     int tx = (int)target.x;
     int ty = (int)target.y;
+
+	if (x == tx && y == ty){
+		return (Vector2){x + 0, y + 0};
+	}
 
     AddToMemo(pos_memo, x, y);
 
@@ -461,68 +575,323 @@ Vector2 GerakKurir(Vector2 target, Vector2 current, unsigned char** dataJalan, i
             Vector2 next = {nx, ny};
             float dist = Vector2Distance(target, next);
 
-			// if ((i + 1) == LawanArah(*memo_arah)) {
-            //     dist += 1.0f;
-            // }
+			if ((i + 1) == LawanArah(*memo_arah)) {
+				//bestScore = -1;
+				//continue;
+				dist += 20.0f;
+            	// switch (i + 1) {
+				// 	case 1: return (Vector2){x + 1, y + 0};	//	kanan
+				// 	case 2: return (Vector2){x + 1, y + 0};
+				// 	case 3: return (Vector2){x + 0, y + 1};	//	bawah
+				// 	case 4: return (Vector2){x + 0, y + 1};
+				// 	case 5: return (Vector2){x + 1, y + 1};	//	kanan bawah
+				// 	case 6: return (Vector2){x - 1, y + 1};
+				// 	case 7: return (Vector2){x - 1, y + 1};	//	kanan atas
+				// 	case 8: return (Vector2){x + 1, y + 1};
+				// default:
+				// 	return (Vector2){x, y}; // tidak gerak
+				// }
+			}
 
 			printf("dist: %.2f\n", dist);
 			printf("best score: %.2f\n", bestScore);
 
             if (dist < bestScore) {
-                bestScore = dist;
+				bestScore = dist;
                 bestMove = next;
                 *memo_arah = i + 1;
-				//float ang = atan2f(next.y - current.y, next.x - current.x) * 57.2957795f; // RAD2DEG
-                //*rotasi = (int)ang;
+				float ang = atan2f(next.y - current.y, next.x - current.x) * 57.2957795f; // RAD2DEG
+                *rotasi = (int)ang;
             }
         }
     }
 
-	printf("x: %.2f, y: %.2f\n", bestMove.x, bestMove.y);
+	printf("\t\t x: %.2f, y: %.2f\n", bestMove.x, bestMove.y);
     return bestMove;
 }
 
-
-Vector2 MoveKurir(Vector2 current, Vector2 target, float speed){
-   	Vector2 direction = {target.x - current.x, target.y - current.y};
-   	float length = sqrtf(direction.x * direction.x + direction.y * direction.y);
+Vector2 CariArahValid(Vector2 current, Vector2 target, unsigned char** dataJalan, int speed) {
+	Vector2 arah = Vector2Normalize(Vector2Subtract(target, current));
 	
-   	if (length > 0){
-   		direction.x /= length;
-   		direction.y /= length;
-   	}
+	for (float sudut = 0; sudut <= 90; sudut += 15) {
+		for (int arahPutar = -1; arahPutar <= 1; arahPutar += 2) {
+			float rot = sudut * arahPutar * (PI / 180.0f);
+			Vector2 cobaArah = {
+				arah.x * cosf(rot) - arah.y * sinf(rot),
+				arah.x * sinf(rot) + arah.y * cosf(rot)
+			};
 
-	printf("dir x: %.2f\n", direction.x);
-	printf("dir y: %.2f\n", direction.y);
+			Vector2 next = Vector2Add(current, Vector2Scale(cobaArah, 5));
+			int nx = (int)next.x;
+			int ny = (int)next.y;
 
-   	Vector2 result = {
-   		current.x + direction.x * speed,
-   		current.y + direction.y * speed};
+			if (dataJalan[ny][nx] == '1') {
+				return cobaArah;
+			}
+		}
+	}
 
-   	return (Vector2)result;
-  }
-
-/***
-
-Vector2 MoveKurir(Vector2 current, Vector2 target, float speed){
- 	int direction_x = target.x - current.x;
- 	int direction_y = target.y - current.y;
-
- 	float length = sqrtf(direction_x * direction_x + direction_y * direction_y);
-
- 	// kalo target.x > current.x dan target.y == current.y maka (tujuan = kuadran I, current = kuadran II)
- 	// if (direction_x == 0){
- 	// }
-
-	Vector2 result = {
-		current.x + 1 * speed,
-		current.y + 0,
-	};
-
-	return (Vector2)result;
+	return (Vector2){0, 0}; // tidak bisa gerak
 }
 
-***/
+Vector2 GerakKurir4(Vector2 target, Vector2 current, unsigned char** dataJalan, int speed, int* rotasi) {
+    if (Vector2Distance(current, target) < speed) return target;
+
+    Vector2 next = current;
+    float dx = target.x - current.x;
+    float dy = target.y - current.y;
+
+    // Prioritaskan gerak vertikal jika belum sejajar Y
+    if ((int)dy != 0) {
+        int stepY = (dy > 0) ? 1 : -1;
+        if (dataJalan[(int)current.y + stepY][(int)current.x] == '1') {
+            next.y += stepY;
+            *rotasi = (stepY == 1) ? 90 : -90;
+            return next;
+        }
+    }
+
+    // Jika tidak bisa gerak Y, coba X
+    if ((int)dx != 0) {
+        int stepX = (dx > 0) ? 1 : -1;
+        if (dataJalan[(int)current.y][(int)current.x + stepX] == '1') {
+            next.x += stepX;
+            *rotasi = (stepX == 1) ? 0 : 180;
+            return next;
+        }
+    }
+
+    // Tidak bisa gerak
+    return current;
+}
+
+// A star
+typedef struct {
+    int x, y;
+} Point;
+
+typedef struct Node {
+    Point pos;
+    float g; // cost from start to current node
+    float h; // heuristic cost to target
+    float f; // total cost = g + h
+    struct Node* parent;
+} Node;
+
+// Min-heap priority queue for open set
+typedef struct {
+    Node* data[1000 * 600];
+    int size;
+} PriorityQueue;
+
+// Function prototypes
+void pq_push(PriorityQueue* pq, Node* node);
+Node* pq_pop(PriorityQueue* pq);
+int pq_empty(PriorityQueue* pq);
+int pq_contains(PriorityQueue* pq, Node* node);
+
+float heuristic(Point a, Point b);
+float distance(Point a, Point b);
+int is_valid(int x, int y, int width, int height, unsigned char** dataJalan);
+
+Node** create_nodes(int width, int height);
+void free_nodes(Node** nodes, int height);
+
+int points_equal(Point a, Point b);
+
+int reconstruct_path(Node* endNode, Point* path, int maxLength);
+
+int AStar(Point start, Point target, unsigned char** dataJalan, int width, int height, Point* outPath, int maxLength);
+
+////////////////////////////////////////////////////////////////////////////////
+// Priority Queue functions (min-heap based on node->f)
+
+void swap(Node** a, Node** b) {
+    Node* tmp = *a;
+    *a = *b;
+    *b = tmp;
+}
+
+void pq_push(PriorityQueue* pq, Node* node) {
+    int i = pq->size++;
+    pq->data[i] = node;
+    while (i > 0) {
+        int parent = (i - 1) / 2;
+        if (pq->data[parent]->f <= pq->data[i]->f) break;
+        swap(&pq->data[parent], &pq->data[i]);
+        i = parent;
+    }
+}
+
+Node* pq_pop(PriorityQueue* pq) {
+    if (pq->size == 0) return NULL;
+    Node* ret = pq->data[0];
+    pq->data[0] = pq->data[--pq->size];
+    int i = 0;
+    while (1) {
+        int left = 2 * i + 1;
+        int right = 2 * i + 2;
+        int smallest = i;
+        if (left < pq->size && pq->data[left]->f < pq->data[smallest]->f) smallest = left;
+        if (right < pq->size && pq->data[right]->f < pq->data[smallest]->f) smallest = right;
+        if (smallest == i) break;
+        swap(&pq->data[i], &pq->data[smallest]);
+        i = smallest;
+    }
+    return ret;
+}
+
+int pq_empty(PriorityQueue* pq) {
+    return pq->size == 0;
+}
+
+// Check if node with same pos exists in pq (linear search)
+int pq_contains(PriorityQueue* pq, Node* node) {
+    for (int i = 0; i < pq->size; i++) {
+        if (pq->data[i]->pos.x == node->pos.x && pq->data[i]->pos.y == node->pos.y) return 1;
+    }
+    return 0;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Helper functions
+
+float heuristic(Point a, Point b) {
+    // Euclidean distance
+    return sqrtf((a.x - b.x)*(a.x - b.x) + (a.y - b.y)*(a.y - b.y));
+}
+
+float distance(Point a, Point b) {
+    // Euclidean distance between adjacent nodes (can be 1 or sqrt(2))
+    float dx = (float)(a.x - b.x);
+    float dy = (float)(a.y - b.y);
+    return sqrtf(dx*dx + dy*dy);
+}
+
+int is_valid(int x, int y, int width, int height, unsigned char** dataJalan) {
+    return (x >= 0 && y >= 0 && x < width && y < height && dataJalan[y][x] == '1');
+}
+
+Node** create_nodes(int width, int height) {
+    Node** nodes = (Node**)malloc(height * sizeof(Node*));
+    for (int i = 0; i < height; i++) {
+        nodes[i] = (Node*)malloc(width * sizeof(Node));
+    }
+    return nodes;
+}
+
+void free_nodes(Node** nodes, int height) {
+    for (int i = 0; i < height; i++) {
+        free(nodes[i]);
+    }
+    free(nodes);
+}
+
+int points_equal(Point a, Point b) {
+    return (a.x == b.x && a.y == b.y);
+}
+
+// Reconstruct path from endNode by following parent pointers backwards
+int reconstruct_path(Node* endNode, Point* path, int maxLength) {
+    int count = 0;
+    Node* cur = endNode;
+    while (cur != NULL && count < maxLength) {
+        path[count++] = cur->pos;
+        cur = cur->parent;
+    }
+    // Reverse path to start->end order
+    for (int i = 0; i < count/2; i++) {
+        Point tmp = path[i];
+        path[i] = path[count - 1 - i];
+        path[count - 1 - i] = tmp;
+    }
+    return count;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Main A* function
+
+int AStar(Point start, Point target, unsigned char** dataJalan, int width, int height, Point* outPath, int maxLength) {
+    if (!is_valid(start.x, start.y, width, height, dataJalan)) return 0;
+    if (!is_valid(target.x, target.y, width, height, dataJalan)) return 0;
+
+    Node** nodes = create_nodes(width, height);
+
+    // Initialize nodes
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            nodes[y][x].pos.x = x;
+            nodes[y][x].pos.y = y;
+            nodes[y][x].g = 1e9f;
+            nodes[y][x].h = 0;
+            nodes[y][x].f = 1e9f;
+            nodes[y][x].parent = NULL;
+        }
+    }
+
+    PriorityQueue openSet = { .size = 0 };
+    int** closedSet = (int**)malloc(height * sizeof(int*));
+    for (int i = 0; i < height; i++) {
+        closedSet[i] = (int*)calloc(width, sizeof(int));
+    }
+
+    Node* startNode = &nodes[start.y][start.x];
+    startNode->g = 0;
+    startNode->h = heuristic(start, target);
+    startNode->f = startNode->h;
+
+    pq_push(&openSet, startNode);
+
+    // Directions: 8 neighbors
+    int dir[8][2] = {
+        {1,0}, {-1,0}, {0,1}, {0,-1},
+        {1,1}, {-1,1}, {1,-1}, {-1,-1}
+    };
+
+    while (!pq_empty(&openSet)) {
+        Node* current = pq_pop(&openSet);
+
+        if (points_equal(current->pos, target)) {
+            int pathLen = reconstruct_path(current, outPath, maxLength);
+            // Free closedSet memory
+            for (int i = 0; i < height; i++) free(closedSet[i]);
+            free(closedSet);
+            free_nodes(nodes, height);
+            return pathLen;
+        }
+
+        closedSet[current->pos.y][current->pos.x] = 1;
+
+        // Explore neighbors
+        for (int i = 0; i < 8; i++) {
+            int nx = current->pos.x + dir[i][0];
+            int ny = current->pos.y + dir[i][1];
+
+            if (!is_valid(nx, ny, width, height, dataJalan)) continue;
+            if (closedSet[ny][nx]) continue;
+
+            Node* neighbor = &nodes[ny][nx];
+            float tentative_g = current->g + distance(current->pos, neighbor->pos);
+
+            if (tentative_g < neighbor->g) {
+                neighbor->parent = current;
+                neighbor->g = tentative_g;
+                neighbor->h = heuristic(neighbor->pos, target);
+                neighbor->f = neighbor->g + neighbor->h;
+
+                if (!pq_contains(&openSet, neighbor)) {
+                    pq_push(&openSet, neighbor);
+                }
+            }
+        }
+    }
+
+    // No path found
+    for (int i = 0; i < height; i++) free(closedSet[i]);
+    free(closedSet);
+    free_nodes(nodes, height);
+    return 0;
+}
 
 int main()
 {
@@ -561,12 +930,23 @@ int main()
 	// load grid map
 	Vector2 kurir_rorr = {-1, -1};
 	Vector2 source = {-1, -1};
+	Vector2 source_maya = {-1, -1};
+	bool flag_maya = false;
 	Vector2 destination = {-1, -1};
 	Vector2 outline = {-1, -1};
 	int memo_arah = 0;
 	Vector2 memo_pos = {-1, -1};
 	PosMemo pos_memo;
 	InitMemo(&pos_memo);
+
+
+	// ningga
+	int currentStep = 0;      // indeks step path yang sedang dikejar
+	int pathLen = 0;          // panjang path yang didapat dari A*
+	//Point path[1000];           // posisi float kurir
+	float speed = 1.0f;
+
+	Vector2 path_istimewa[110];
 
 	// hal hal yang berhubungan dengan entitas kurir
 	kurir = LoadImage("resources/kurir_new2.png");
@@ -655,7 +1035,18 @@ int main()
 			if (button_start && !startgame)
 			{
 				//Tombol Start ditekan, mulai permainan
+
 				startgame = true;
+	
+				//currentStep = 0;
+				//Point kurr, tarr;
+				//kurr.x = (int)kurir_rorr.x;
+				//kurr.y = (int)kurir_rorr.y;
+				//tarr.x = (int)source.x;
+				//tarr.y = (int)source.y;
+
+				//pathLen = AStar(kurr, tarr, dataJalan, 1000, 600, path, 1000);
+			
 
 				// Tentukan posisi awal kurir (misalnya bisa ditentukan secara acak atau tetap)
 				// kurir_rorr = (Vector2){100, 100};					 // Posisi awal kurir
@@ -675,25 +1066,6 @@ int main()
 			{
 				startgame = false; // Mengubah nilai ke false untuk menghentikan game
 			}
-
-			// if (button_random){
-
-			// 	kurir_rorr = RandomizePosisi(map, targetcolor + OFFSET_KURIR, 10);
-			// 	source = RandomizePosisi(map, targetcolor + OFFSET_KURIR, 10);
-
-			// 	if (source.x == kurir_rorr.x && source.y == kurir_rorr.y)
-			// 	{
-			// 		source = RandomizePosisi(map, targetcolor, 10);
-			// 	}
-
-			// 	destination = RandomizePosisi(map, targetcolor, 10);
-
-			// 	if ((destination.x == source.x && destination.y == source.y) ||
-			// 		(destination.x == kurir_rorr.x && destination.y == kurir_rorr.y))
-			// 	{
-			// 		destination = RandomizePosisi(map, targetcolor, 10);
-			// 	}
-
 			
 			// }
 
@@ -704,13 +1076,57 @@ int main()
 				int x_sc = (int)source.x;
 				int y_sc = (int)source.y;
 
+				int x_sc_maya = (int)source_maya.x;
+				int y_sc_maya = (int)source_maya.y;
+
 				int distance_x = x_sc - x;
 				int distance_y = y_sc - y;
 
 				memo_pos.x = x;
 				memo_pos.y = y;
-				kurir_rorr = GerakKurir(source, kurir_rorr, dataJalan, &memo_arah, 1.0f, &pos_memo, &rotation);
+
+				if ((x == x_sc || y == y_sc) && flag_maya == false){
+					flag_maya = true;
+					source_maya = pojokMaya(source, dataJalan, 600, 1000);
+				}
+
+				if (flag_maya == true && x == x_sc_maya || y == y_sc_maya){
+					flag_maya = false;
+				}
+
+				if (flag_maya){
+					//kurir_rorr = GerakKurir2(source_maya, kurir_rorr, dataJalan, &memo_arah, 1.0f, &pos_memo);
+					kurir_rorr = GerakKurir(source_maya, kurir_rorr, dataJalan, &memo_arah, 1.0f, &pos_memo, &rotation);
+					//kurir_rorr = GerakKurir4(source_maya, kurir_rorr, dataJalan, 1.0f, &rotation);
+				}else {
+					//kurir_rorr = GerakKurir2(source, kurir_rorr, dataJalan, &memo_arah, 1.0f, &pos_memo);
+					kurir_rorr = GerakKurir(source, kurir_rorr, dataJalan, &memo_arah, 1.0f, &pos_memo, &rotation);
+					//kurir_rorr = GerakKurir4(source, kurir_rorr, dataJalan, 1.0f, &rotation);
+				}
+
+
+				//kurir_rorr = GerakKurir(source, kurir_rorr, dataJalan, &memo_arah, 1.0f, &pos_memo, &rotation);
+				//kurir_rorr = GerakKurir4(source, kurir_rorr, dataJalan, 1.0f, &rotation);
+				//kurir_rorr = GerakKurirFix(source, kurir_rorr, dataJalan);
 				//DrawPixel(kurir_rorr.x, kurir_rorr.y, RED);
+
+				// ningga
+				// if (currentStep < pathLen) {
+				// 	Vector2 stepTarget = (Vector2){ (float)path[currentStep].x, (float)path[currentStep].y };
+
+				// 	Vector2 diff = Vector2Subtract(stepTarget, kurir_rorr);
+				// 	float dist = Vector2Length(diff);
+
+				// 	if (dist < speed) {
+				// 		// langsung ke step target dan maju ke step berikutnya
+				// 		kurir_rorr = stepTarget;
+				// 		currentStep++;
+				// 	} else {
+				// 		// gerak ke arah stepTarget dengan speed
+				// 		Vector2 dir = Vector2Scale(Vector2Normalize(diff), speed);
+				// 		kurir_rorr = Vector2Add(kurir_rorr, dir);
+				// 	}
+				// }	
 			
 				//if (x >= 0 && x < map.width && y >= 0 && y < map.height && dataJalan[y][x] == '1') {
 					//kurir_rorr = MoveKurir(kurir_rorr, source, 1.0f);
@@ -737,7 +1153,10 @@ int main()
 
 
 			if (button_random)
-			{
+			{	
+				startgame = false;
+
+
 				kurir_rorr = RandomizePosisi(map);
 				source = RandomizePosisi(map);
 
