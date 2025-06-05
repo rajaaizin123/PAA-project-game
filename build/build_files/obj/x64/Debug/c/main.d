@@ -1,76 +1,85 @@
 obj/x64/Debug/c/main.o: ../../src/main.c \
  ../external/raylib-master/src/raylib.h \
- C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/14.2.0/include/stdarg.h \
- C:/msys64/ucrt64/include/stdarg.h \
- C:/msys64/ucrt64/include/_mingw_stdarg.h \
- C:/msys64/ucrt64/include/vadefs.h C:/msys64/ucrt64/include/_mingw.h \
- C:/msys64/ucrt64/include/_mingw_mac.h \
- C:/msys64/ucrt64/include/_mingw_secapi.h \
- C:/msys64/ucrt64/include/sdks/_mingw_ddk.h \
- C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/14.2.0/include/stdbool.h \
- C:/msys64/ucrt64/include/stdio.h \
- C:/msys64/ucrt64/include/corecrt_stdio_config.h \
- C:/msys64/ucrt64/include/corecrt.h \
- C:/msys64/ucrt64/include/_mingw_off_t.h \
- C:/msys64/ucrt64/include/swprintf.inl \
- C:/msys64/ucrt64/include/sec_api/stdio_s.h \
- C:/msys64/ucrt64/include/stdlib.h \
- C:/msys64/ucrt64/include/corecrt_wstdlib.h \
- C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/14.2.0/include/limits.h \
- C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/14.2.0/include/syslimits.h \
- C:/msys64/ucrt64/include/limits.h C:/msys64/ucrt64/include/crtdefs.h \
- C:/msys64/ucrt64/include/sec_api/stdlib_s.h \
- C:/msys64/ucrt64/include/malloc.h \
- C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/14.2.0/include/mm_malloc.h \
- C:/msys64/ucrt64/include/errno.h C:/msys64/ucrt64/include/string.h \
- C:/msys64/ucrt64/include/sec_api/string_s.h \
- ../external/raylib-master/src/raymath.h C:/msys64/ucrt64/include/math.h \
- C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/14.2.0/include/stdint.h \
- C:/msys64/ucrt64/include/stdint.h \
- C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/14.2.0/include/stddef.h \
- C:/msys64/ucrt64/include/stddef.h ../../src/../include/resource_dir.h \
+ C:/MinGW/lib/gcc/x86_64-w64-mingw32/13.2.0/include/stdarg.h \
+ C:/MinGW/x86_64-w64-mingw32/include/stdarg.h \
+ C:/MinGW/x86_64-w64-mingw32/include/_mingw_stdarg.h \
+ C:/MinGW/x86_64-w64-mingw32/include/vadefs.h \
+ C:/MinGW/x86_64-w64-mingw32/include/_mingw.h \
+ C:/MinGW/x86_64-w64-mingw32/include/_mingw_mac.h \
+ C:/MinGW/x86_64-w64-mingw32/include/_mingw_secapi.h \
+ C:/MinGW/x86_64-w64-mingw32/include/sdks/_mingw_ddk.h \
+ C:/MinGW/lib/gcc/x86_64-w64-mingw32/13.2.0/include/stdbool.h \
+ C:/MinGW/x86_64-w64-mingw32/include/stdio.h \
+ C:/MinGW/x86_64-w64-mingw32/include/corecrt_stdio_config.h \
+ C:/MinGW/x86_64-w64-mingw32/include/corecrt.h \
+ C:/MinGW/x86_64-w64-mingw32/include/_mingw_off_t.h \
+ C:/MinGW/x86_64-w64-mingw32/include/swprintf.inl \
+ C:/MinGW/x86_64-w64-mingw32/include/sec_api/stdio_s.h \
+ C:/MinGW/x86_64-w64-mingw32/include/stdlib.h \
+ C:/MinGW/x86_64-w64-mingw32/include/corecrt_wstdlib.h \
+ C:/MinGW/lib/gcc/x86_64-w64-mingw32/13.2.0/include/limits.h \
+ C:/MinGW/lib/gcc/x86_64-w64-mingw32/13.2.0/include/syslimits.h \
+ C:/MinGW/x86_64-w64-mingw32/include/limits.h \
+ C:/MinGW/x86_64-w64-mingw32/include/crtdefs.h \
+ C:/MinGW/x86_64-w64-mingw32/include/sec_api/stdlib_s.h \
+ C:/MinGW/x86_64-w64-mingw32/include/malloc.h \
+ C:/MinGW/lib/gcc/x86_64-w64-mingw32/13.2.0/include/mm_malloc.h \
+ C:/MinGW/x86_64-w64-mingw32/include/errno.h \
+ C:/MinGW/x86_64-w64-mingw32/include/string.h \
+ C:/MinGW/x86_64-w64-mingw32/include/sec_api/string_s.h \
+ ../external/raylib-master/src/raymath.h \
+ C:/MinGW/x86_64-w64-mingw32/include/math.h \
+ C:/MinGW/lib/gcc/x86_64-w64-mingw32/13.2.0/include/stdint.h \
+ C:/MinGW/x86_64-w64-mingw32/include/stdint.h \
+ C:/MinGW/lib/gcc/x86_64-w64-mingw32/13.2.0/include/stddef.h \
+ C:/MinGW/x86_64-w64-mingw32/include/stddef.h \
+ C:/MinGW/lib/gcc/x86_64-w64-mingw32/13.2.0/include/float.h \
+ C:/MinGW/x86_64-w64-mingw32/include/float.h \
+ ../../src/../include/resource_dir.h \
  ../external/raylib-master/src/gui_window_file_dialog.h \
  ../external/raylib-master/src/raylib.h \
  ../external/raylib-master/src/external/../../src/raygui.h \
  ../external/raylib-master/src/external/../../src/raylib.h \
- C:/msys64/ucrt64/include/ctype.h
+ C:/MinGW/x86_64-w64-mingw32/include/ctype.h
 ../external/raylib-master/src/raylib.h:
-C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/14.2.0/include/stdarg.h:
-C:/msys64/ucrt64/include/stdarg.h:
-C:/msys64/ucrt64/include/_mingw_stdarg.h:
-C:/msys64/ucrt64/include/vadefs.h:
-C:/msys64/ucrt64/include/_mingw.h:
-C:/msys64/ucrt64/include/_mingw_mac.h:
-C:/msys64/ucrt64/include/_mingw_secapi.h:
-C:/msys64/ucrt64/include/sdks/_mingw_ddk.h:
-C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/14.2.0/include/stdbool.h:
-C:/msys64/ucrt64/include/stdio.h:
-C:/msys64/ucrt64/include/corecrt_stdio_config.h:
-C:/msys64/ucrt64/include/corecrt.h:
-C:/msys64/ucrt64/include/_mingw_off_t.h:
-C:/msys64/ucrt64/include/swprintf.inl:
-C:/msys64/ucrt64/include/sec_api/stdio_s.h:
-C:/msys64/ucrt64/include/stdlib.h:
-C:/msys64/ucrt64/include/corecrt_wstdlib.h:
-C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/14.2.0/include/limits.h:
-C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/14.2.0/include/syslimits.h:
-C:/msys64/ucrt64/include/limits.h:
-C:/msys64/ucrt64/include/crtdefs.h:
-C:/msys64/ucrt64/include/sec_api/stdlib_s.h:
-C:/msys64/ucrt64/include/malloc.h:
-C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/14.2.0/include/mm_malloc.h:
-C:/msys64/ucrt64/include/errno.h:
-C:/msys64/ucrt64/include/string.h:
-C:/msys64/ucrt64/include/sec_api/string_s.h:
+C:/MinGW/lib/gcc/x86_64-w64-mingw32/13.2.0/include/stdarg.h:
+C:/MinGW/x86_64-w64-mingw32/include/stdarg.h:
+C:/MinGW/x86_64-w64-mingw32/include/_mingw_stdarg.h:
+C:/MinGW/x86_64-w64-mingw32/include/vadefs.h:
+C:/MinGW/x86_64-w64-mingw32/include/_mingw.h:
+C:/MinGW/x86_64-w64-mingw32/include/_mingw_mac.h:
+C:/MinGW/x86_64-w64-mingw32/include/_mingw_secapi.h:
+C:/MinGW/x86_64-w64-mingw32/include/sdks/_mingw_ddk.h:
+C:/MinGW/lib/gcc/x86_64-w64-mingw32/13.2.0/include/stdbool.h:
+C:/MinGW/x86_64-w64-mingw32/include/stdio.h:
+C:/MinGW/x86_64-w64-mingw32/include/corecrt_stdio_config.h:
+C:/MinGW/x86_64-w64-mingw32/include/corecrt.h:
+C:/MinGW/x86_64-w64-mingw32/include/_mingw_off_t.h:
+C:/MinGW/x86_64-w64-mingw32/include/swprintf.inl:
+C:/MinGW/x86_64-w64-mingw32/include/sec_api/stdio_s.h:
+C:/MinGW/x86_64-w64-mingw32/include/stdlib.h:
+C:/MinGW/x86_64-w64-mingw32/include/corecrt_wstdlib.h:
+C:/MinGW/lib/gcc/x86_64-w64-mingw32/13.2.0/include/limits.h:
+C:/MinGW/lib/gcc/x86_64-w64-mingw32/13.2.0/include/syslimits.h:
+C:/MinGW/x86_64-w64-mingw32/include/limits.h:
+C:/MinGW/x86_64-w64-mingw32/include/crtdefs.h:
+C:/MinGW/x86_64-w64-mingw32/include/sec_api/stdlib_s.h:
+C:/MinGW/x86_64-w64-mingw32/include/malloc.h:
+C:/MinGW/lib/gcc/x86_64-w64-mingw32/13.2.0/include/mm_malloc.h:
+C:/MinGW/x86_64-w64-mingw32/include/errno.h:
+C:/MinGW/x86_64-w64-mingw32/include/string.h:
+C:/MinGW/x86_64-w64-mingw32/include/sec_api/string_s.h:
 ../external/raylib-master/src/raymath.h:
-C:/msys64/ucrt64/include/math.h:
-C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/14.2.0/include/stdint.h:
-C:/msys64/ucrt64/include/stdint.h:
-C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/14.2.0/include/stddef.h:
-C:/msys64/ucrt64/include/stddef.h:
+C:/MinGW/x86_64-w64-mingw32/include/math.h:
+C:/MinGW/lib/gcc/x86_64-w64-mingw32/13.2.0/include/stdint.h:
+C:/MinGW/x86_64-w64-mingw32/include/stdint.h:
+C:/MinGW/lib/gcc/x86_64-w64-mingw32/13.2.0/include/stddef.h:
+C:/MinGW/x86_64-w64-mingw32/include/stddef.h:
+C:/MinGW/lib/gcc/x86_64-w64-mingw32/13.2.0/include/float.h:
+C:/MinGW/x86_64-w64-mingw32/include/float.h:
 ../../src/../include/resource_dir.h:
 ../external/raylib-master/src/gui_window_file_dialog.h:
 ../external/raylib-master/src/raylib.h:
 ../external/raylib-master/src/external/../../src/raygui.h:
 ../external/raylib-master/src/external/../../src/raylib.h:
-C:/msys64/ucrt64/include/ctype.h:
+C:/MinGW/x86_64-w64-mingw32/include/ctype.h:

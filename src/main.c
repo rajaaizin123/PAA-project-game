@@ -7,6 +7,7 @@
 #include <string.h>
 #include <raymath.h>
 #include <stdint.h>
+#include <float.h>
 
 #include "../include/resource_dir.h" // utility header for SearchAndSetResourceDir
 #include "gui_window_file_dialog.h"
@@ -16,729 +17,496 @@
 #define OFFSET_X 50
 #define OFFSET_Y 70
 #define GRID 25 // ini sekaligus lebar aspal (defaultnya)
-
 #define OFFSET_KURIR 12
 
-typedef enum{
+typedef enum
+{
 	MENU_STATE,
 	GAME_STATE
 } GameState;
 
-typedef struct Vector_16{
+typedef struct Vector_16
+{
 	uint16_t x;
 	uint16_t y;
 	uint16_t step;
 } Vector16;
 
+typedef struct
+{
+	int x[5];
+	int y[5];
+	int head;
+} PosMemo;
 
-bool isWarnaAspal(Color pixel){
-	if ( (pixel.r >= 90 && pixel.r <= 150) && 
-		 (pixel.g >= 90 && pixel.g <= 150) && 
-		 (pixel.b >= 90 && pixel.b <= 150)){
+typedef struct
+{
+	int x, y;
+} Point;
 
-			return true;
-	}
-
-	return false;
+bool tahapDua = false;
+// Function to check if a pixel is asphalt
+bool isWarnaAspal(Color pixel)
+{
+	return (pixel.r >= 90 && pixel.r <= 150) &&
+		   (pixel.g >= 90 && pixel.g <= 150) &&
+		   (pixel.b >= 90 && pixel.b <= 150);
 }
 
-unsigned char** LoadMapKeArray(Image map) {
-	unsigned char ** jalanMap = (unsigned char**)malloc(map.height * sizeof(unsigned char**));
-
-    for (int y = 0; y < map.height; y++) {
-        jalanMap[y] = (unsigned char*)malloc(map.width * sizeof(unsigned char));
-
-        for (int x = 0; x < map.width; x++) {
-            Color pixel = GetImageColor(map, x, y);
-            jalanMap[y][x] = isWarnaAspal(pixel) ? '1' : '0';
-        }
-    }
-
+// Load map into a 2D array
+unsigned char **LoadMapKeArray(Image map)
+{
+	if (map.data == NULL)
+	{
+		printf("Error: Map data is NULL in LoadMapKeArray\n");
+		return NULL;
+	}
+	unsigned char **jalanMap = (unsigned char **)malloc(map.height * sizeof(unsigned char *));
+	if (!jalanMap)
+	{
+		printf("Error: Failed to allocate memory for jalanMap\n");
+		return NULL;
+	}
+	for (int y = 0; y < map.height; y++)
+	{
+		jalanMap[y] = (unsigned char *)malloc(map.width * sizeof(unsigned char));
+		if (!jalanMap[y])
+		{
+			printf("Error: Failed to allocate memory for jalanMap[%d]\n", y);
+			for (int i = 0; i < y; i++)
+				free(jalanMap[i]);
+			free(jalanMap);
+			return NULL;
+		}
+		for (int x = 0; x < map.width; x++)
+		{
+			Color pixel = GetImageColor(map, x, y);
+			jalanMap[y][x] = isWarnaAspal(pixel) ? '1' : '0';
+		}
+	}
 	return jalanMap;
 }
 
-//Vector2 RandomizePosisi(Image map){
-Vector2 RandomizePosisi(Image map) {
-	int percobaan = 0, max_percobaan = 100;
-
-	while (percobaan < max_percobaan){
-		int rx = GetRandomValue(0, map.width - 1);
-		int ry = GetRandomValue(0, map.height - 1);
-
-		Color pixel = GetImageColor(map, rx, ry);
-		if (isWarnaAspal(pixel)){
-			return (Vector2){rx, ry};
-		}
-
-	 	percobaan++;
+// Randomize a valid position on the map
+Vector2 RandomizePosisi(Image map)
+{
+	if (map.data == NULL)
+	{
+		printf("Error: Peta belum dimuat di RandomizePosisi!\n");
+		return (Vector2){-1, -1};
 	}
 
+	int max_attempts = 100;
+	for (int i = 0; i < max_attempts; i++)
+	{
+		int rx = GetRandomValue(0, map.width - 1);
+		int ry = GetRandomValue(0, map.height - 1);
+		if (rx >= 0 && ry >= 0 && rx < map.width && ry < map.height && isWarnaAspal(GetImageColor(map, rx, ry)))
+		{
+			printf("Valid position found: (%d, %d)\n", rx, ry);
+			return (Vector2){(float)rx, (float)ry};
+		}
+	}
+	printf("Warning: Tidak dapat menemukan posisi valid setelah %d percobaan\n", max_attempts);
 	return (Vector2){-1, -1};
 }
 
-Vector2 PosisiValid(Image map, Image ukuran, Vector2 posisi_awal){
-	// ambil warna
+bool posisiSudahDiacak = false;
+
+void ResetPosisi(Vector2 *kurir, Vector2 *src, Vector2 *dst, int *pathLen, int *step, bool *posisiFlag)
+{
+	*kurir = (Vector2){-1, -1};
+	*src = (Vector2){-1, -1};
+	*dst = (Vector2){-1, -1};
+	*pathLen = 0;
+	*step = 0;
+	*posisiFlag = false;
+}
+
+// Validate position to ensure it fits within the map
+Vector2 PosisiValid(Image map, Image ukuran, Vector2 posisi_awal)
+{
+	if (map.data == NULL || ukuran.data == NULL)
+	{
+		printf("Error: Map or ukuran data is NULL in PosisiValid\n");
+		return (Vector2){0, 0};
+	}
 	Color pixel_patokan_kanan;
 	int iterasi_pixel = ukuran.width;
 	int pixel_outline_x = 0;
 	for (int i = 1; i <= ukuran.width; i++)
 	{
-		// titik ini dari sudut pandang gambar
-		pixel_patokan_kanan = GetImageColor(map, posisi_awal.x + iterasi_pixel, posisi_awal.y);
-		if (isWarnaAspal(pixel_patokan_kanan)){
+		int check_x = (int)posisi_awal.x + iterasi_pixel;
+		if (check_x >= map.width || check_x < 0)
+			break;
+		pixel_patokan_kanan = GetImageColor(map, check_x, (int)posisi_awal.y);
+		if (isWarnaAspal(pixel_patokan_kanan))
+		{
 			break;
 		}
-
 		iterasi_pixel--;
 		pixel_outline_x = i;
 	}
 
-	// cek bawah
 	Color pixel_patokan_bawah;
 	iterasi_pixel = ukuran.height;
 	int pixel_outline_y = 0;
 	for (int i = 1; i <= ukuran.height; i++)
 	{
-		pixel_patokan_bawah = GetImageColor(map, posisi_awal.x, posisi_awal.y + iterasi_pixel);
-		if (isWarnaAspal(pixel_patokan_bawah)){
+		int check_y = (int)posisi_awal.y + iterasi_pixel;
+		if (check_y >= map.height || check_y < 0)
+			break;
+		pixel_patokan_bawah = GetImageColor(map, (int)posisi_awal.x, check_y);
+		if (isWarnaAspal(pixel_patokan_bawah))
+		{
 			break;
 		}
 		iterasi_pixel--;
 		pixel_outline_y = i;
 	}
-	return (Vector2){pixel_outline_x, pixel_outline_y};
+	return (Vector2){(float)pixel_outline_x, (float)pixel_outline_y};
 }
 
-//Fungsi untuk menghitung arah pergerakan kurir ke arah tujuan
-// Vector2 MoveKurir(Vector2 kurir_pos, Vector2 target_pos, float speed)
-// {
-// 	float angle = atan2(target_pos.y - kurir_pos.y, target_pos.x - kurir_pos.x);
-// 	kurir_pos.x += cos(angle) * speed;
-// 	kurir_pos.y += sin(angle) * speed;
-// 	return kurir_pos;
-// }
-
-void DrawGrid__(int screen_width, int screen_height){
-	for (int i = 0; i < 44; i++){
-		DrawLine(0, i * GRID, screen_width, i * GRID, BLUE);
-
-		DrawLine(i * GRID, 0, i * GRID, screen_height, BLUE);
-	}
-}
-
-Vector2 posisiPojok(Vector2 current, unsigned char** dataJalan, int tinggi_map, int lebar_map) {
-    int cx = (int)current.x;
-    int cy = (int)current.y;
-
-    // cek ke atas
-    for (int y = cy; y >= 0; y--) {
-        if (dataJalan[y][cx] == '0') {
-            return (Vector2){current.x, y};
-        }
-    }
-
-    // cek ke bawah
-    for (int y = cy; y < tinggi_map; y++) {
-        if (dataJalan[y][cx] == '0') {
-            return (Vector2){current.x, y};
-        }
-    }
-
-    // cek ke kiri
-    for (int x = cx; x >= 0; x--) {
-        if (dataJalan[cy][x] == '0') {
-            return (Vector2){x, current.y};
-        }
-    }
-
-    // cek ke kanan
-    for (int x = cx; x < lebar_map; x++) {
-        if (dataJalan[cy][x] == '0') {
-            return (Vector2){x, current.y};
-        }
-    }
-
-    return (Vector2){-1, -1};
-}
-
-Vector2 pojokMaya(Vector2 current, unsigned char** dataJalan, int tinggi_map, int lebar_map){
-	int cx = (int)current.x;
-	int cy = (int)current.y;
-
-	Vector16 atas = {cx, cy, 0}, bawah = {cx, cy, 0}, kiri = {cx, cy, 0}, kanan = {cx, cy, 0};
-	Vector16 kananAtas = {cx, cy, 0}, kananBawah = {cx, cy, 0};
-	Vector16 kiriAtas = {cx, cy, 0}, kiriBawah = {cx, cy, 0};
-
-	// Atas
-	for (int y = cy - 1; y >= 0; y--) {
-		if (dataJalan[y][cx] == '0') {
-			atas = (Vector16){cx, y, (uint16_t)(cy - y)};
-			break;
-		}
-	}
-
-	// Bawah
-	for (int y = cy + 1; y < tinggi_map; y++) {
-		if (dataJalan[y][cx] == '0') {
-			bawah = (Vector16){cx, y, (uint16_t)(y - cy)};
-			break;
-		}
-	}
-
-	// Kiri
-	for (int x = cx - 1; x >= 0; x--) {
-		if (dataJalan[cy][x] == '0') {
-			kiri = (Vector16){x, cy, (uint16_t)(cx - x)};
-			break;
-		}
-	}
-
-	// Kanan
-	for (int x = cx + 1; x < lebar_map; x++) {
-		if (dataJalan[cy][x] == '0') {
-			kanan = (Vector16){x, cy, (uint16_t)(x - cx)};
-			break;
-		}
-	}
-
-	// Kanan Atas ↗
-	for (int i = 1; cx + i < lebar_map && cy - i >= 0; i++) {
-		if (dataJalan[cy - i][cx + i] == '0') {
-			kananAtas = (Vector16){cx + i, cy - i, (uint16_t)i};
-			break;
-		}
-	}
-
-	// Kanan Bawah ↘
-	for (int i = 1; cx + i < lebar_map && cy + i < tinggi_map; i++) {
-		if (dataJalan[cy + i][cx + i] == '0') {
-			kananBawah = (Vector16){cx + i, cy + i, (uint16_t)i};
-			break;
-		}
-	}
-
-	// Kiri Atas ↖
-	for (int i = 1; cx - i >= 0 && cy - i >= 0; i++) {
-		if (dataJalan[cy - i][cx - i] == '0') {
-			kiriAtas = (Vector16){cx - i, cy - i, (uint16_t)i};
-			break;
-		}
-	}
-
-	// Kiri Bawah ↙
-	for (int i = 1; cx - i >= 0 && cy + i < tinggi_map; i++) {
-		if (dataJalan[cy + i][cx - i] == '0') {
-			kiriBawah = (Vector16){cx - i, cy + i, (uint16_t)i};
-			break;
-		}
-	}
-
-	// Cari yang step-nya paling besar
-	Vector16 kandidat[] = {atas, bawah, kiri, kanan, kananAtas, kananBawah, kiriAtas, kiriBawah};
-	Vector16 maksimal = kandidat[0];
-
-	for (int i = 1; i < 8; i++) {
-		if (kandidat[i].step > maksimal.step) {
-			maksimal = kandidat[i];
-		}
-	}
-
-	if (maksimal.step == 0) {
-		return (Vector2){-1, -1}; // Tidak ada jalan
-	}
-
-	return (Vector2){(float)maksimal.x, (float)maksimal.y};
-}
-
-
-#define SIZE_MEMO 100
-typedef struct {
-	int x[SIZE_MEMO];
-	int y[SIZE_MEMO];
-	int head;
-} PosMemo;
-
-void InitMemo(PosMemo *pos_memo){
-	for (int i = 0; i < SIZE_MEMO; i++){
+// Initialize position memo
+void InitMemo(PosMemo *pos_memo)
+{
+	for (int i = 0; i < 5; i++)
+	{
 		pos_memo->x[i] = -1;
 		pos_memo->y[i] = -1;
 	}
 	pos_memo->head = 0;
 }
 
-bool sudahDikunjungi(PosMemo *pos_memo, int x, int y) {
-    for (int i = 0; i < SIZE_MEMO; i++) {
-        if (pos_memo->x[i] == x && pos_memo->y[i] == y) {
-            return true;
-        }
-    }
-    return false;
+// Check if a position has been visited
+bool sudahDikunjungi(PosMemo *pos_memo, int x, int y)
+{
+	for (int i = 0; i < 5; i++)
+	{
+		if (pos_memo->x[i] == x && pos_memo->y[i] == y)
+		{
+			return true;
+		}
+	}
+	return false;
 }
 
-void AddToMemo(PosMemo *pos_memo, int x, int y) {
-    pos_memo->x[pos_memo->head] = x;
-    pos_memo->y[pos_memo->head] = y;
-    pos_memo->head = (pos_memo->head + 1) % SIZE_MEMO;
+// Add position to memo
+void AddToMemo(PosMemo *pos_memo, int x, int y)
+{
+	pos_memo->x[pos_memo->head] = x;
+	pos_memo->y[pos_memo->head] = y;
+	pos_memo->head = (pos_memo->head + 1) % 5;
 }
 
-//* versi 0.1
-Vector2 GerakKurir1(Vector2 target, Vector2 current, unsigned char** dataJalan, int *memo_arah, int speed, PosMemo *pos_memo){
-	int x = (int)current.x;
-    int y = (int)current.y;
-    int tx = (int)target.x;
-    int ty = (int)target.y;
-
-	int x_memo = (int)current.x;
-	int y_memo = (int)current.y;
-
-	// kode arah ---> 1:atas, 2:bawah, 3: kanan, 4: kiri, 5:miring-kanan-atas, 6:miring-kiri-atas, 
-	//                7:miring-kanan-bawah, 8:miring-kiri-bawah
-	if (tx > x) *memo_arah = 3;
-	else if (tx < x) *memo_arah = 4;
-
-	if (ty > y) *memo_arah = 2;
-	else if (ty < y) *memo_arah = 1;
-
-	// titik sebelumnya
-	
-
-	// pergerakan ke = atas - bawah - kanan - kiri
-	// kasus jalan diagonal = atas - bawah - kanan - kiri
-
-	// if (sudahDikunjungi(pos_memo, x, y)){
-	// 	if (*memo_arah == 1){
-	// 		return (Vector2){x, y - 1};
-	// 	}else if (*memo_arah == 2){
-	// 		return (Vector2){x, y + 1};
-	// 	}else if (*memo_arah == 3){
-	// 		return (Vector2){x + 1, y};
-	// 	}else if (*memo_arah == 4){
-	// 		return (Vector2){x - 1, y};
-	// 	}
-	// }
-
-	if (dataJalan[y - 1][x] == '1' && *memo_arah != 2){
-		// ------------  Kasus diagonal --------------- //
-		// tujuan ada di kanan 
-		// -- dengan jalan miring ke kanan
-		if (dataJalan[y][x + 1] == '0' && dataJalan[y - 1][x + 1] == '1' && *memo_arah == 3){
-			x += 1;
-			y -= 1;
-			*memo_arah = 5;
-		}
-		// -- dengan jalan miring ke kiri
-		else if (dataJalan[y][x + 1] == '0' && dataJalan[y - 1][x] == '0' && dataJalan[y - 1][x - 1] == '1' && *memo_arah == 3){
-			x -= 1;
-			y -= 1;
-			*memo_arah = 6;
-		}
-
-		// tujuan ada di kiri
-		// -- dengan jalan miring ke kanan
-		else if (dataJalan[y][x - 1] == '0' && dataJalan[y - 1][x] == '0' && dataJalan[y - 1][x + 1] == '1' && *memo_arah == 4){
-			x += 1;
-			y -= 1;
-			*memo_arah = 5;
-		}
-		// -- dengan jalan miring ke kiri
-		else if (dataJalan[y][x - 1] == '0' && dataJalan[y - 1][x - 1] == '1' && *memo_arah == 4){
-			x -= 1;
-			y -= 1;
-			*memo_arah = 6;
-		}
-
-
-		// ----------- Kasus tidak diagonal -------------- //
-		else {
-			x = (int)current.x;
-			y -= 1;
-			*memo_arah = 1;
-		}
-	}
-	else if (dataJalan[y + 1][x] == '1' && *memo_arah != 1){
-		// ------------  Kasus diagonal --------------- //
-		// tujuan ada di kanan 
-		// -- dengan jalan miring ke kanan
-		if (dataJalan[y][x + 1] == '0' && dataJalan[y + 1][x + 1] == '1' && *memo_arah == 3){
-			x += 1;
-			y += 1;
-			*memo_arah = 7;
-		}
-		// -- dengan jalan miring ke kiri
-		else if (dataJalan[y][x + 1] == '0' && dataJalan[y + 1][x] == '0' && dataJalan[y + 1][x - 1] == '1' && *memo_arah == 3){
-			x -= 1;
-			y += 1;
-			*memo_arah = 8;
-		}
-
-		// tujuan ada di kiri
-		// -- dengan jalan miring ke kanan
-		else if (dataJalan[y + 1][x] == '0' && dataJalan[y][x - 1] == '0' && dataJalan[y + 1][x + 1] == '1' && *memo_arah == 4){
-			x += 1;
-			y += 1;
-			*memo_arah = 7;
-		}
-		// -- dengan jalan miring ke kiri
-		else if (dataJalan[y][x - 1] == '0' && dataJalan[y + 1][x - 1] == '1' && *memo_arah == 4){
-			x -= 1;
-			y += 1;
-			*memo_arah = 8;
-		}
-
-		// ----------- Kasus tidak diagonal -------------- //
-		else {
-			x = (int)current.x;
-			y += 1;
-			*memo_arah = 2;
-		}
-	}
-	else if (dataJalan[y][x + 1] == '1'){
-		// hanya jalan ke kanan jika sebelumnya belum pernah jalan ke kiri
-		if (*memo_arah != 4 || dataJalan[y][x - 1] == '0'){
-			x += 1;
-			y = (int)current.y;
-			*memo_arah = 3;
-		}
-	}
-	else if (dataJalan[y][x - 1] == '1'){
-		if (*memo_arah != 3 || dataJalan[y][x + 1] == '0'){
-			x -= 1;
-			y = (int)current.y;
-			*memo_arah = 4;
-		}
-	}
-
-	
-	AddToMemo(pos_memo, (int)current.x, (int)current.y);
-
-	printf("Aspal atas: %c\n", dataJalan[y - 1][x]);
-	printf("Aspal bawah: %c\n", dataJalan[y + 1][x]);
-	printf("Aspal kanan: %c\n", dataJalan[y][x + 1]);
-	printf("Aspal kiri: %c\n\n", dataJalan[y][x - 1]);
-
-	printf("source --> x: %d, y: %d\n", x, y);
-	printf("Arah: %d\n", *memo_arah);
-	// printf("target --> x: %.2f, y: %.2f\n", target.x, target.y);
-	// printf("dir x:%.2f\n", direction.x);
-	// printf("dir y:%.2f\n", direction.y);
-	
-	return (Vector2){x, y};
-	
+// Fungsi heuristik untuk menghitung jarak Manhattan
+int heuristic(int x1, int y1, int x2, int y2)
+{
+	return abs(x1 - x2) + abs(y1 - y2);
 }
 
-
-// versi 0.2
-Vector2 GerakKurir2(Vector2 target, Vector2 current, unsigned char** dataJalan, int *memo_arah, int speed, PosMemo *pos_memo) {
-    int x = (int)current.x;
-    int y = (int)current.y;
-    int tx = (int)target.x;
-    int ty = (int)target.y;
-
-    int step_x = 0, step_y = 0;
-
-    if (tx > x) {
-		step_x = 1;
-		*memo_arah = 1;
+// Fungsi A* Pathfinding
+int AStar(Point start, Point goal, unsigned char **dataJalan, int width, int height, Point *path, int maxPathLen)
+{
+	if (dataJalan == NULL)
+	{
+		printf("Error: dataJalan is NULL in AStar\n");
+		return 0;
 	}
-    else if (tx < x) {
-		step_x = -1;
-		*memo_arah = 2;
+	if (start.x < 0 || start.y < 0 || goal.x < 0 || goal.y < 0 ||
+		start.x >= width || start.y >= height || goal.x >= width || goal.y >= height)
+	{
+		printf("Error: Invalid start or goal coordinates in AStar\n");
+		return 0;
 	}
 
-    if (ty > y) {
-		step_y = 1;
-		*memo_arah = 3;
-	}
+	typedef struct
+	{
+		int x, y;
+		int g, h, f;
+		int parentX, parentY;
+	} Node;
 
-    else if (ty < y) {
-		step_y = -1;
-		*memo_arah = 4;
-	}
-
-    // Prioritas gerak diagonal (miring)
-	printf("arah: %d\n", *memo_arah);
-	printf("x: %d, y: %d\n", x, y);
-	if (sudahDikunjungi(pos_memo, x, y)){
-		if (*memo_arah == 1 && dataJalan[y][x + 1] == '1'){
-			return (Vector2){x + 1, y};
-		}else if (ty > y && dataJalan[y][x + 1] == '0'){
-			return (Vector2){x, y + 1};
-		}else if (ty < y && dataJalan[y][x + 1] == '0'){
-			return (Vector2){x, y - 1};
-		}else {
-			return (Vector2){x, y + 1};
-		}
-		
-		if (*memo_arah == 2 && dataJalan[y][x - 1] == '1'){
-			return (Vector2){x - 1, y};
-		}else if (ty > y && dataJalan[y][x - 1] == '0'){
-			return (Vector2){x, y + 1};
-		}else if (ty < y && dataJalan[y][x - 1] == '0'){
-			return (Vector2){x, y - 1};
-		}else {
-			return (Vector2){x, y + 1};
-		}
-		
-		if (*memo_arah == 3 && dataJalan[y + 1][x] == '1'){
-			return (Vector2){x, y + 1};
-		}else if (tx > x && dataJalan[y + 1][x] == '0'){
-			return (Vector2){x + 1, y};
-		}else if (tx < x && dataJalan[y + 1][x] == '0'){
-			return (Vector2){x - 1, y};
-		}
-
-		if (*memo_arah == 4 && dataJalan[y - 1][x] == '1'){
-			return (Vector2){x, y - 1};
-		}else if (tx > x && dataJalan[y - 1][x] == '0'){
-			return (Vector2){x + 1, y};
-		}else if (tx < x && dataJalan[y - 1][x] == '0'){
-			return (Vector2){x - 1, y};
+	// Alokasi dinamis
+	Node **nodes = malloc(height * sizeof(Node *));
+	bool **closed = malloc(height * sizeof(bool *));
+	bool **open = malloc(height * sizeof(bool *));
+	for (int y = 0; y < height; y++)
+	{
+		nodes[y] = malloc(width * sizeof(Node));
+		closed[y] = calloc(width, sizeof(bool)); // Inisialisasi ke false
+		open[y] = calloc(width, sizeof(bool));
+		for (int x = 0; x < width; x++)
+		{
+			nodes[y][x] = (Node){x, y, INT_MAX, 0, INT_MAX, -1, -1};
 		}
 	}
 
-	if (dataJalan[y + step_y][x + step_x] == '1') {
-        x += step_x;
-        y += step_y;
-    }
-    else if (dataJalan[y + step_y][x] == '1') {
-        y += step_y;
-    }
-    else if (dataJalan[y][x + step_x] == '1') { 
-        x += step_x;
-	}
+	int (*openList)[2] = malloc(width * height * sizeof(int[2]));
+	int openCount = 0;
 
-    return (Vector2){x, y}; 
-}
+	nodes[start.y][start.x].g = 0;
+	nodes[start.y][start.x].h = heuristic(start.x, start.y, goal.x, goal.y);
+	nodes[start.y][start.x].f = nodes[start.y][start.x].h;
+	openList[openCount][0] = start.x;
+	openList[openCount][1] = start.y;
+	open[start.y][start.x] = true;
+	openCount++;
 
-int LawanArah(int arah) {
-    switch (arah) {
-        case 1: return 2;  // kanan ←→ kiri
-        case 2: return 1;
-        case 3: return 4;  // bawah ←→ atas
-        case 4: return 3;
-        case 5: return 8;  // kanan bawah ←→ kiri atas
-        case 6: return 7;  // kiri bawah ←→ kanan atas
-        case 7: return 6;
-        case 8: return 5;
-        default: return 0;
-    }
-}
+	int dx[] = {1, -1, 0, 0, 1, -1, 1, -1};
+	int dy[] = {0, 0, 1, -1, 1, 1, -1, -1};
 
-Vector2 isi_path_arah_y(Vector2 current){
-	int x = (int)current.x;
-	int y = (int)current.y;
+	while (openCount > 0)
+	{
+		int minF = INT_MAX;
+		int minIdx = 0;
+		for (int i = 0; i < openCount; i++)
+		{
+			int x = openList[i][0];
+			int y = openList[i][1];
+			if (nodes[y][x].f < minF)
+			{
+				minF = nodes[y][x].f;
+				minIdx = i;
+			}
+		}
 
-	return (Vector2){x + 0, y - 1};
-}
+		int cx = openList[minIdx][0];
+		int cy = openList[minIdx][1];
 
-Vector2 isi_path_arah_x(Vector2 current){
-	int x = (int)current.x;
-	int y = (int)current.y;
+		// Remove dari open list
+		open[cy][cx] = false;
+		openList[minIdx][0] = openList[openCount - 1][0];
+		openList[minIdx][1] = openList[openCount - 1][1];
+		openCount--;
 
-	return (Vector2){x + 1, y + 0};
-}
+		closed[cy][cx] = true;
 
-// versi 0.3
-Vector2 GerakKurir(Vector2 target, Vector2 current, unsigned char** dataJalan, int *memo_arah, int speed, PosMemo *pos_memo, int *rotasi) {
-    int x = (int)current.x;
-    int y = (int)current.y;
-    int tx = (int)target.x;
-    int ty = (int)target.y;
-
-	if (x == tx && y == ty){
-		return (Vector2){x + 0, y + 0};
-	}
-
-    AddToMemo(pos_memo, x, y);
-
-    Vector2 bestMove = current;
-    float bestScore = 1e9;
-
-    Vector2 arah[8] = {
-        {1, 0},   // kanan
-        {-1, 0},  // kiri
-        {0, 1},   // bawah
-        {0, -1},  // atas
-        {1, 1},   // kanan bawah
-        {-1, 1},  // kiri bawah
-        {1, -1},  // kanan atas
-        {-1, -1}  // kiri atas
-    };
-
-    for (int i = 0; i < 8; i++) {
-        int dx = (int)arah[i].x;
-        int dy = (int)arah[i].y;
-        int nx = x + dx;
-        int ny = y + dy;
-
-        if (dataJalan[ny][nx] == '1' && !sudahDikunjungi(pos_memo, nx, ny)) {
-            Vector2 next = {nx, ny};
-            float dist = Vector2Distance(target, next);
-
-			if ((i + 1) == LawanArah(*memo_arah)) {
-				//bestScore = -1;
-				//continue;
-				dist += 20.0f;
-            	// switch (i + 1) {
-				// 	case 1: return (Vector2){x + 1, y + 0};	//	kanan
-				// 	case 2: return (Vector2){x + 1, y + 0};
-				// 	case 3: return (Vector2){x + 0, y + 1};	//	bawah
-				// 	case 4: return (Vector2){x + 0, y + 1};
-				// 	case 5: return (Vector2){x + 1, y + 1};	//	kanan bawah
-				// 	case 6: return (Vector2){x - 1, y + 1};
-				// 	case 7: return (Vector2){x - 1, y + 1};	//	kanan atas
-				// 	case 8: return (Vector2){x + 1, y + 1};
-				// default:
-				// 	return (Vector2){x, y}; // tidak gerak
-				// }
+		if (cx == goal.x && cy == goal.y)
+		{
+			// Rekonstruksi path
+			int pathLen = 0;
+			int x = cx, y = cy;
+			while (x != -1 && y != -1 && pathLen < maxPathLen)
+			{
+				path[pathLen].x = x;
+				path[pathLen].y = y;
+				int px = nodes[y][x].parentX;
+				int py = nodes[y][x].parentY;
+				x = px;
+				y = py;
+				pathLen++;
 			}
 
-			printf("dist: %.2f\n", dist);
-			printf("best score: %.2f\n", bestScore);
+			// Reverse path
+			for (int i = 0; i < pathLen / 2; i++)
+			{
+				Point temp = path[i];
+				path[i] = path[pathLen - 1 - i];
+				path[pathLen - 1 - i] = temp;
+			}
 
-            if (dist < bestScore) {
-				bestScore = dist;
-                bestMove = next;
-                *memo_arah = i + 1;
-				float ang = atan2f(next.y - current.y, next.x - current.x) * 57.2957795f; // RAD2DEG
-                *rotasi = (int)ang;
-            }
-        }
-    }
+			// Dealokasi
+			for (int i = 0; i < height; i++)
+			{
+				free(nodes[i]);
+				free(closed[i]);
+				free(open[i]);
+			}
 
-	printf("\t\t x: %.2f, y: %.2f\n", bestMove.x, bestMove.y);
-    return bestMove;
-}
+			free(nodes);
+			free(closed);
+			free(open);
+			free(openList);
 
-Vector2 CariArahValid(Vector2 current, Vector2 target, unsigned char** dataJalan, int speed) {
-	Vector2 arah = Vector2Normalize(Vector2Subtract(target, current));
-	
-	for (float sudut = 0; sudut <= 90; sudut += 15) {
-		for (int arahPutar = -1; arahPutar <= 1; arahPutar += 2) {
-			float rot = sudut * arahPutar * (PI / 180.0f);
-			Vector2 cobaArah = {
-				arah.x * cosf(rot) - arah.y * sinf(rot),
-				arah.x * sinf(rot) + arah.y * cosf(rot)
-			};
+			return pathLen;
+		}
 
-			Vector2 next = Vector2Add(current, Vector2Scale(cobaArah, 5));
-			int nx = (int)next.x;
-			int ny = (int)next.y;
+		for (int i = 0; i < 8; i++)
+		{
+			int nx = cx + dx[i];
+			int ny = cy + dy[i];
 
-			if (dataJalan[ny][nx] == '1') {
-				return cobaArah;
+			if (nx < 0 || ny < 0 || nx >= width || ny >= height || closed[ny][nx] || dataJalan[ny][nx] == '0')
+				continue;
+
+			int g = nodes[cy][cx].g + ((i < 4) ? 10 : 14);
+			if (g < nodes[ny][nx].g)
+			{
+				nodes[ny][nx].g = g;
+				nodes[ny][nx].h = heuristic(nx, ny, goal.x, goal.y);
+				nodes[ny][nx].f = g + nodes[ny][nx].h;
+				nodes[ny][nx].parentX = cx;
+				nodes[ny][nx].parentY = cy;
+
+				if (!open[ny][nx])
+				{
+					openList[openCount][0] = nx;
+					openList[openCount][1] = ny;
+					open[ny][nx] = true;
+					openCount++;
+				}
 			}
 		}
 	}
 
-	return (Vector2){0, 0}; // tidak bisa gerak
+	// Tidak ditemukan path, bersihkan memori
+	for (int i = 0; i < height; i++)
+	{
+		free(nodes[i]);
+		free(closed[i]);
+		free(open[i]);
+	}
+	free(nodes);
+	free(closed);
+	free(open);
+	free(openList);
+
+	printf("AStar: No path found\n");
+	return 0;
 }
 
-Vector2 GerakKurir4(Vector2 target, Vector2 current, unsigned char** dataJalan, int speed, int* rotasi) {
-    if (Vector2Distance(current, target) < speed) return target;
+// Fixed naifMove function
+Vector2 naifMove(int *memo_arah)
+{
+	Vector2 arah[8] = {
+		{1, 0},	 // kanan
+		{-1, 0}, // kiri
+		{0, 1},	 // bawah
+		{0, -1}, // atas
+		{1, 1},	 // kanan bawah
+		{-1, 1}, // kiri bawah
+		{1, -1}, // kanan atas
+		{-1, -1} // kiri atas
+	};
 
-    Vector2 next = current;
-    float dx = target.x - current.x;
-    float dy = target.y - current.y;
+	if (*memo_arah >= 1 && *memo_arah <= 8)
+	{
+		return arah[*memo_arah - 1];
+	}
+	return (Vector2){0, 0}; // Default if no valid direction
+}
 
-    // Prioritaskan gerak vertikal jika belum sejajar Y
-    if ((int)dy != 0) {
-        int stepY = (dy > 0) ? 1 : -1;
-        if (dataJalan[(int)current.y + stepY][(int)current.x] == '1') {
-            next.y += stepY;
-            *rotasi = (stepY == 1) ? 90 : -90;
-            return next;
-        }
-    }
+// Revised GerakKurir using A* path
+Vector2 GerakKurir(Vector2 target, Vector2 current, unsigned char **dataJalan,
+				   int width, int height, int *memo_arah, int speed,
+				   PosMemo *pos_memo, int *rotasi, Point *path, int *pathLen, int *currentStep)
+{
+	if (dataJalan == NULL)
+	{
+		printf("Error: dataJalan is NULL in GerakKurir\n");
+		return current;
+	}
+	int x = (int)current.x;
+	int y = (int)current.y;
+	int tx = (int)target.x;
+	int ty = (int)target.y;
 
-    // Jika tidak bisa gerak Y, coba X
-    if ((int)dx != 0) {
-        int stepX = (dx > 0) ? 1 : -1;
-        if (dataJalan[(int)current.y][(int)current.x + stepX] == '1') {
-            next.x += stepX;
-            *rotasi = (stepX == 1) ? 0 : 180;
-            return next;
-        }
-    }
+	if (x < 0 || y < 0 || tx < 0 || ty < 0)
+	{
+		printf("Error: Invalid coordinates in GerakKurir (current: %d,%d, target: %d,%d)\n", x, y, tx, ty);
+		return current;
+	}
 
-    // Tidak bisa gerak
-    return current;
+	if (*currentStep >= *pathLen)
+	{
+		// Recalculate path if needed
+		Point start = {x, y};
+		Point goal = {tx, ty};
+		*pathLen = AStar(start, goal, dataJalan, width, height, path, 1000);
+		*currentStep = 0;
+		if (*pathLen == 0)
+		{
+			printf("Error: Failed to recalculate path in GerakKurir\n");
+			return current;
+		}
+	}
+
+	if (*currentStep < *pathLen)
+	{
+		Vector2 stepTarget = {(float)path[*currentStep].x, (float)path[*currentStep].y};
+		Vector2 diff = Vector2Subtract(stepTarget, current);
+		float dist = Vector2Length(diff);
+
+		if (dist < speed)
+		{
+			current = stepTarget;
+			(*currentStep)++;
+			AddToMemo(pos_memo, (int)current.x, (int)current.y);
+		}
+		else
+		{
+			Vector2 dir = Vector2Scale(Vector2Normalize(diff), speed);
+			current = Vector2Add(current, dir);
+		}
+
+		// Update rotation
+		if (Vector2Length(diff) > 0)
+		{
+			*rotasi = (int)(atan2f(diff.y, diff.x) * 57.2957795f); // RAD2DEG
+			// Update memo_arah based on direction
+			if (fabs(diff.x) > fabs(diff.y))
+			{
+				*memo_arah = (diff.x > 0) ? 1 : 2; // Kanan or Kiri
+			}
+			else
+			{
+				*memo_arah = (diff.y > 0) ? 3 : 4; // Bawah or Atas
+			}
+		}
+	}
+
+	return current;
 }
 
 int main()
 {
-	// Window Inilisiation
 	const int screenWidth = 1100;
 	const int screenHeight = 700;
 	InitWindow(screenWidth, screenHeight, "Smart Kurir");
-
-	// deklarasi warna target
-	Color targetcolor = (Color){0, 255, 0, 255}; // Misalnya warna hijau
-
-	// cek game sudah dimulai apa belum
-	bool startgame = false;
-
 	SetConfigFlags(FLAG_VSYNC_HINT | FLAG_WINDOW_HIGHDPI);
-
-	// set Frame FPS
 	SetTargetFPS(60);
-	// Start from the main menu
+
 	GameState currentScreen = MENU_STATE;
+	bool startgame = false;
+	bool mapLoaded = false;
 
-	// button
-	bool button_start = false;
-	bool button_stop = false;
-	bool button_random = false;
-
-	// dirselector (handle upload png)
 	GuiWindowFileDialogState fileDialogState = InitGuiWindowFileDialog(GetWorkingDirectory());
 	char namaFileGambar[512] = {0};
 	Texture map_texture = {0};
-	Image map, kurir;
+	Image map = {0};
+	unsigned char **dataJalan = NULL;
 
-	// load data aspal ke array
-	unsigned char** dataJalan;
-
-	// load grid map
 	Vector2 kurir_rorr = {-1, -1};
 	Vector2 source = {-1, -1};
-	Vector2 source_maya = {-1, -1};
-	bool flag_maya = false;
 	Vector2 destination = {-1, -1};
 	Vector2 outline = {-1, -1};
 	int memo_arah = 0;
-	Vector2 memo_pos = {-1, -1};
 	PosMemo pos_memo;
 	InitMemo(&pos_memo);
-
-
-	// ningga
-	int currentStep = 0;      // indeks step path yang sedang dikejar
-	int pathLen = 0;          // panjang path yang didapat dari A*
-	//Point path[1000];           // posisi float kurir
+	int rotation = 0;
 	float speed = 1.0f;
 
-	Vector2 path_istimewa[110];
+	Point path[1000];
+	int pathLen = 0;
+	int currentStep = 0;
 
-	// hal hal yang berhubungan dengan entitas kurir
-	kurir = LoadImage("resources/kurir_new2.png");
+	Image kurir = LoadImage("resources/kurir_new2.png");
+	if (kurir.data == NULL)
+	{
+		printf("Error: Failed to load kurir_new2.png\n");
+		CloseWindow();
+		return 1;
+	}
 	Texture2D kurir_texture = LoadTextureFromImage(kurir);
 	Rectangle sourceRecKurir = {0.f, 0.f, (float)kurir.width, (float)kurir.height};
-	//Rectangle destRecKurir = {kurir_rorr.x, kurir_rorr.y, (float)kurir.width, (float)kurir.height};
-	Vector2 origin = { (float)kurir.width / 2.0f, (float)kurir.height / 2.0f};
-	int rotation = 0;
+	Vector2 origin = {(float)kurir.width / 2.0f, (float)kurir.height / 2.0f};
 
-
-	// Utility function from resource_dir.h to find the resources folder and set it as the current working directory so we can load from it
 	SearchAndSetResourceDir("resources");
 
-	// game loop
 	while (!WindowShouldClose())
 	{
-		//  proses drawing
 		BeginDrawing();
-
-		// Setup the back buffer for drawing (clear color and depth buffers)
 		ClearBackground(BLACK);
 
 		if (currentScreen == MENU_STATE)
@@ -752,239 +520,206 @@ int main()
 		{
 			if (fileDialogState.SelectFilePressed)
 			{
-				// Load image file (if supported extension)
 				if (IsFileExtension(fileDialogState.fileNameText, ".png"))
 				{
-					// gabung direktori dan nama file
 					strcpy(namaFileGambar, TextFormat("%s" PATH_SEPERATOR "%s", fileDialogState.dirPathText, fileDialogState.fileNameText));
-
-					// loading message
-					DrawText("Loading image...", screenWidth / 2 - 80, screenHeight / 2, 20, BLUE);
-
-					// Load image
-					map = LoadImage(namaFileGambar);
-					if (map.data == NULL)
+					Image newMap = LoadImage(namaFileGambar);
+					if (newMap.data != NULL)
 					{
-						printf("Gagal load gambar.\n");
-					}
-					else
-					{
+						if (dataJalan)
+						{
+							for (int y = 0; y < map.height; y++)
+								free(dataJalan[y]);
+							free(dataJalan);
+							if (map.data)
+								UnloadImage(map);
+						}
+						map = newMap;
 						UnloadTexture(map_texture);
 						map_texture = LoadTextureFromImage(map);
 						dataJalan = LoadMapKeArray(map);
+						if (dataJalan == NULL)
+						{
+							printf("Error: Failed to load map array\n");
+							mapLoaded = false;
+						}
+						else
+						{
+							mapLoaded = true;
+							printf("Map loaded: %s (%dx%d)\n", namaFileGambar, map.width, map.height);
+						}
 					}
-
-					EndDrawing();
+					else
+					{
+						printf("Gagal memuat gambar: %s\n", namaFileGambar);
+						mapLoaded = false;
+					}
 				}
-
 				fileDialogState.SelectFilePressed = false;
 			}
 
 			DrawTexture(map_texture, OFFSET_X, OFFSET_Y, WHITE);
-
+			
 			if (fileDialogState.windowActive)
 				GuiLock();
 
-			if (GuiButton((Rectangle){20, 20, 140, 30}, GuiIconText(ICON_FILE_OPEN, "Pilih Map")))
+			bool button_file = GuiButton((Rectangle){20, 20, 140, 30}, GuiIconText(ICON_FILE_OPEN, "Pilih Map"));
+			if (button_file)
 				fileDialogState.windowActive = true;
-			// Tombol Start Game
 
-			// deklarasi button
-			button_start = GuiButton((Rectangle){170, 20, 140, 30}, "Start Game");
-			button_stop = GuiButton((Rectangle){320, 20, 140, 30}, "Stop Game");
-			button_random = GuiButton((Rectangle){470, 20, 140, 30}, "Random Mize");
+			bool button_start = GuiButton((Rectangle){170, 20, 140, 30}, "Start Game");
+			bool button_stop = GuiButton((Rectangle){320, 20, 140, 30}, "Stop Game");
+			bool button_random = GuiButton((Rectangle){470, 20, 140, 30}, "Random Mize");
+			bool button_reset = GuiButton((Rectangle){620, 20, 140, 30}, "Reset Posisi");
 
-			// // Cek kalau mouse klik tombol
-			// if (CheckCollisionPointRec(GetMousePosition(), button_start)){
-			//  	if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
-			//  	{
-			//  		startgame = true;
-			// 		kurir_rorr = (Vector2){100, 100};
-			// 		source = (Vector2){400, 300};
-			// 	}
-			// }
-
-			if (button_start && !startgame)
+			if (button_start && !startgame && mapLoaded && dataJalan)
 			{
-				//Tombol Start ditekan, mulai permainan
-
+				printf("Start Game button pressed\n");
 				startgame = true;
-	
-				//currentStep = 0;
-				//Point kurr, tarr;
-				//kurr.x = (int)kurir_rorr.x;
-				//kurr.y = (int)kurir_rorr.y;
-				//tarr.x = (int)source.x;
-				//tarr.y = (int)source.y;
 
-				//pathLen = AStar(kurr, tarr, dataJalan, 1000, 600, path, 1000);
-			
-
-				// Tentukan posisi awal kurir (misalnya bisa ditentukan secara acak atau tetap)
-				// kurir_rorr = (Vector2){100, 100};					 // Posisi awal kurir
-				// source = RandomizePosisi(map, targetcolor, 10);		 // Posisi sumber
-				// destination = RandomizePosisi(map, targetcolor, 10); // Posisi tujuan
-
-
-				// Tambahkan logika untuk menghindari overlap antara source dan destination
-				// while (destination.x == source.x && destination.y == source.y)
-				// {
-				// 	destination = RandomizePosisi(map, targetcolor, 10);
-				// }
-
-			}			
-
-			if (button_stop)
-			{
-				startgame = false; // Mengubah nilai ke false untuk menghentikan game
-			}
-			
-			// }
-
-			if (startgame) {
-				int x = (int)kurir_rorr.x;
-				int y = (int)kurir_rorr.y;
-
-				int x_sc = (int)source.x;
-				int y_sc = (int)source.y;
-
-				int x_sc_maya = (int)source_maya.x;
-				int y_sc_maya = (int)source_maya.y;
-
-				int distance_x = x_sc - x;
-				int distance_y = y_sc - y;
-
-				memo_pos.x = x;
-				memo_pos.y = y;
-
-				if ((x == x_sc || y == y_sc) && flag_maya == false){
-					flag_maya = true;
-					source_maya = pojokMaya(source, dataJalan, 600, 1000);
-				}
-
-				if (flag_maya == true && x == x_sc_maya || y == y_sc_maya){
-					flag_maya = false;
-				}
-
-				if (flag_maya){
-					//kurir_rorr = GerakKurir2(source_maya, kurir_rorr, dataJalan, &memo_arah, 1.0f, &pos_memo);
-					kurir_rorr = GerakKurir(source_maya, kurir_rorr, dataJalan, &memo_arah, 1.0f, &pos_memo, &rotation);
-					//kurir_rorr = GerakKurir4(source_maya, kurir_rorr, dataJalan, 1.0f, &rotation);
-				}else {
-					//kurir_rorr = GerakKurir2(source, kurir_rorr, dataJalan, &memo_arah, 1.0f, &pos_memo);
-					kurir_rorr = GerakKurir(source, kurir_rorr, dataJalan, &memo_arah, 1.0f, &pos_memo, &rotation);
-					//kurir_rorr = GerakKurir4(source, kurir_rorr, dataJalan, 1.0f, &rotation);
-				}
-
-
-				//kurir_rorr = GerakKurir(source, kurir_rorr, dataJalan, &memo_arah, 1.0f, &pos_memo, &rotation);
-				//kurir_rorr = GerakKurir4(source, kurir_rorr, dataJalan, 1.0f, &rotation);
-				//kurir_rorr = GerakKurirFix(source, kurir_rorr, dataJalan);
-				//DrawPixel(kurir_rorr.x, kurir_rorr.y, RED);
-
-				// ningga
-				// if (currentStep < pathLen) {
-				// 	Vector2 stepTarget = (Vector2){ (float)path[currentStep].x, (float)path[currentStep].y };
-
-				// 	Vector2 diff = Vector2Subtract(stepTarget, kurir_rorr);
-				// 	float dist = Vector2Length(diff);
-
-				// 	if (dist < speed) {
-				// 		// langsung ke step target dan maju ke step berikutnya
-				// 		kurir_rorr = stepTarget;
-				// 		currentStep++;
-				// 	} else {
-				// 		// gerak ke arah stepTarget dengan speed
-				// 		Vector2 dir = Vector2Scale(Vector2Normalize(diff), speed);
-				// 		kurir_rorr = Vector2Add(kurir_rorr, dir);
-				// 	}
-				// }	
-			
-				//if (x >= 0 && x < map.width && y >= 0 && y < map.height && dataJalan[y][x] == '1') {
-					//kurir_rorr = MoveKurir(kurir_rorr, source, 1.0f);
-					//kurir_rorr.x++;
-				//}else{
-
-
-					// if ((dataJalan[y][x + 25] == '1' || dataJalan[y][x - 25] == '0') && (arah_sebelumnya.x != -1  && distance_x > 0)){
-					// 	kurir_rorr.x++;
-					// 	arah_sebelumnya.x = 1;
-					// }else if ((dataJalan[y - 25][x] == '1' || dataJalan[y + 25][x] == '0') && (arah_sebelumnya.y != 1 && distance_y < 0)){
-					// 	kurir_rorr.y--;
-					// 	arah_sebelumnya.y = -1;
-					// }else if ((dataJalan[y + 25][x] == '1' || dataJalan[y - 25][x] == '0') && (arah_sebelumnya.y != -1 && distance_y > 0)) {  // cek bawah
-					// 	kurir_rorr.y++;
-					// 	arah_sebelumnya.y = 1;
-					// }else if ((dataJalan[y][x - 25] ==  '1' || dataJalan[y][x + 25] == '0') && (arah_sebelumnya.x != 1 && distance_x < 0)){
-					// 	kurir_rorr.x--;
-					// 	arah_sebelumnya.x = -1;
-					// }
-				//}
-			}
-			
-
-
-			if (button_random)
-			{	
-				startgame = false;
-
-
-				kurir_rorr = RandomizePosisi(map);
-				source = RandomizePosisi(map);
-
-				if (source.x == kurir_rorr.x && source.y == kurir_rorr.y)
+				if (!posisiSudahDiacak)
 				{
+					kurir_rorr = RandomizePosisi(map);
 					source = RandomizePosisi(map);
-				}
-
-				destination = RandomizePosisi(map);
-
-				if ((destination.x == source.x && destination.y == source.x) || (destination.x == kurir_rorr.x && destination.y == kurir_rorr.y))
-				{
 					destination = RandomizePosisi(map);
 				}
 
+				if (kurir_rorr.x == -1 || source.x == -1 || destination.x == -1)
+				{
+					printf("Error: Posisi tidak valid\n");
+					startgame = false;
+				}
+				else
+				{
+					Point start = {(int)kurir_rorr.x, (int)kurir_rorr.y};
+					Point goal = {(int)source.x, (int)source.y};
+					pathLen = AStar(start, goal, dataJalan, map.width, map.height, path, 1000);
+					currentStep = 0;
+
+					if (pathLen == 0)
+					{
+						printf("Error: Tidak ada jalur ditemukan\n");
+						startgame = false;
+					}
+					else
+					{
+						posisiSudahDiacak = false; // Jangan pakai ulang
+					}
+				}
+			}
+
+			if (button_stop)
+			{
+				printf("Stop Game button pressed\n");
+				startgame = false;
+			}
+
+			if (button_random && mapLoaded && dataJalan)
+			{
+				printf("Random Mize button pressed\n");
+				kurir_rorr = RandomizePosisi(map);
+				source = RandomizePosisi(map);
+				destination = RandomizePosisi(map);
+				posisiSudahDiacak = true;
+				startgame = false;
+				pathLen = 0;
+				currentStep = 0;
+			}
+
+			// Garis Line
+			// if (startgame && pathLen > 1)
+			// {
+			// 	for (int i = 0; i < pathLen - 1; i++)
+			// 	{
+			// 		Vector2 a = {(float)path[i].x + 0.5f + OFFSET_X, (float)path[i].y + 0.5f + OFFSET_Y};
+			// 		Vector2 b = {(float)path[i + 1].x + 0.5f + OFFSET_X, (float)path[i + 1].y + 0.5f + OFFSET_Y};
+			// 		DrawLineEx(a, b, 2.0f, tahapDua ? ORANGE : SKYBLUE);
+			// 	}
+			// }
+
+			if (startgame && mapLoaded && dataJalan)
+			{
+				if (currentStep < pathLen)
+				{
+					Vector2 midTarget = {(float)path[currentStep].x + 0.5f, (float)path[currentStep].y + 0.5f};
+					kurir_rorr = GerakKurir(
+						midTarget,
+						kurir_rorr,
+						dataJalan,
+						map.width, map.height,
+						&memo_arah,
+						speed,
+						&pos_memo,
+						&rotation,
+						path,
+						&pathLen,
+						&currentStep);
+				}
+				else if (!tahapDua)
+				{
+					// // Sampai di source, mulai tahap 2 ke destination
+					// Point start2 = {(int)kurir_rorr.x, (int)kurir_rorr.y};
+					// Point goal2 = {(int)destination.x, (int)destination.y};
+					// pathLen = AStar(start2, goal2, dataJalan, map.width, map.height, path, 1000);
+					// currentStep = 0;
+					// tahapDua = true;
+
+					// Sampai di source, mulai tahap 2 ke destination
+					Point start2 = {(int)kurir_rorr.x, (int)kurir_rorr.y};
+					Point goal2 = {(int)destination.x, (int)destination.y};
+					pathLen = AStar(start2, goal2, dataJalan, map.width, map.height, path, 1000);
+					currentStep = 0;
+					tahapDua = true;
+
+					// ✅ Hapus source
+					source = (Vector2){-1, -1};
+				}
 			}
 
 			if (kurir_rorr.x != -1 && kurir_rorr.y != -1)
 			{
 				outline = PosisiValid(map, kurir, kurir_rorr);
-				//DrawTexture(kurir_texture, kurir_rorr.x - outline.x + OFFSET_X, kurir_rorr.y - outline.y + OFFSET_Y, WHITE);
-
-				// Rotasi
 				Rectangle destRecKurir = {kurir_rorr.x - outline.x + OFFSET_X, kurir_rorr.y - outline.y + OFFSET_Y, (float)kurir.width, (float)kurir.height};
-				DrawTexturePro(kurir_texture, sourceRecKurir, destRecKurir, origin, rotation, WHITE);
+				DrawTexturePro(kurir_texture, sourceRecKurir, destRecKurir, origin, (float)rotation, WHITE);
 
-				outline = PosisiValid(map, kurir, source);
-				DrawRectangle(source.x + OFFSET_X - outline.x, source.y + OFFSET_Y - outline.y, 20, 20, YELLOW);
+				if (source.x != -1 && source.y != -1)
+				{
+					outline = PosisiValid(map, kurir, source);
+					DrawRectangle(source.x + OFFSET_X - outline.x, source.y + OFFSET_Y - outline.y, 20, 20, YELLOW);
+				}
 
-				outline = PosisiValid(map, kurir, destination);
-				DrawRectangle(destination.x + OFFSET_X - outline.x, destination.y + OFFSET_Y - outline.y, 20, 20, RED);
-				
+				if (destination.x != -1 && destination.y != -1)
+				{
+					outline = PosisiValid(map, kurir, destination);
+					DrawRectangle(destination.x + OFFSET_X - outline.x, destination.y + OFFSET_Y - outline.y, 20, 20, RED);
+				}
 			}
-			
-			//DrawGrid__(screenWidth, screenHeight);
+			if (button_reset)
+			{
+				printf("Reset Posisi button pressed\n");
+				ResetPosisi(&kurir_rorr, &source, &destination, &pathLen, &currentStep, &posisiSudahDiacak);
+				startgame = false;
+			}
 
 			GuiUnlock();
-			// GUI: Dialog Window
-			//--------------------------------------------------------------------------------
 			GuiWindowFileDialog(&fileDialogState);
 		}
 
 		EndDrawing();
 	}
 
-	// cleanup
-	// unload our texture so it can be cleaned up
+	// Cleanup
 	UnloadTexture(map_texture);
 	UnloadTexture(kurir_texture);
-
-	for (int y = 0; y < map.height; y++) {
-		free(dataJalan[y]);
+	UnloadImage(kurir);
+	if (dataJalan && map.data)
+	{
+		for (int y = 0; y < map.height; y++)
+			free(dataJalan[y]);
+		free(dataJalan);
 	}
-	free(dataJalan);	
-
-	// destroy the window and cleanup the OpenGL context
+	if (map.data)
+		UnloadImage(map);
 	CloseWindow();
 	return 0;
 }
