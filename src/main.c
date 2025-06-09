@@ -45,6 +45,8 @@ typedef struct
 } Point;
 
 bool tahapDua = false;
+bool posisiSudahDiacak = false;
+bool kurirSampai = false;
 // Function to check if a pixel is asphalt
 bool isWarnaAspal(Color pixel)
 {
@@ -111,7 +113,6 @@ Vector2 RandomizePosisi(Image map)
 	return (Vector2){-1, -1};
 }
 
-bool posisiSudahDiacak = false;
 
 void ResetPosisi(Vector2 *kurir, Vector2 *src, Vector2 *dst, int *pathLen, int *step, bool *posisiFlag)
 {
@@ -603,7 +604,7 @@ int main()
 					}
 					else
 					{
-						posisiSudahDiacak = false; // Jangan pakai ulang
+						posisiSudahDiacak = false; 
 					}
 				}
 			}
@@ -648,7 +649,7 @@ int main()
 						dataJalan,
 						map.width, map.height,
 						&memo_arah,
-						speed,
+						1,
 						&pos_memo,
 						&rotation,
 						path,
@@ -657,42 +658,78 @@ int main()
 				}
 				else if (!tahapDua)
 				{
-					// // Sampai di source, mulai tahap 2 ke destination
-					// Point start2 = {(int)kurir_rorr.x, (int)kurir_rorr.y};
-					// Point goal2 = {(int)destination.x, (int)destination.y};
-					// pathLen = AStar(start2, goal2, dataJalan, map.width, map.height, path, 1000);
-					// currentStep = 0;
-					// tahapDua = true;
-
-					// Sampai di source, mulai tahap 2 ke destination
 					Point start2 = {(int)kurir_rorr.x, (int)kurir_rorr.y};
 					Point goal2 = {(int)destination.x, (int)destination.y};
 					pathLen = AStar(start2, goal2, dataJalan, map.width, map.height, path, 1000);
 					currentStep = 0;
 					tahapDua = true;
-
-					// ✅ Hapus source
 					source = (Vector2){-1, -1};
 				}
+				else
+				{
+					kurirSampai = true;
+					startgame = false;
+				}
+			}
+
+			if (kurirSampai)
+			{
+				DrawText("Kurir telah sampai!", 20, 60, 20, RED);
+			}
+
+			// Ukuran titik source dan destination menyesuaikan grid kecil
+			if (source.x != -1 && source.y != -1)
+			{
+				outline = PosisiValid(map, kurir, source);
+				DrawRectangle((int)(source.x + OFFSET_X - outline.x + 0.5f), (int)(source.y + OFFSET_Y - outline.y + 0.5f), 10, 10, YELLOW);
+			}
+
+			if (destination.x != -1 && destination.y != -1)
+			{
+				outline = PosisiValid(map, kurir, destination);
+				DrawRectangle((int)(destination.x + OFFSET_X - outline.x + 0.5f), (int)(destination.y + OFFSET_Y - outline.y + 0.5f), 10, 10, RED);
 			}
 
 			if (kurir_rorr.x != -1 && kurir_rorr.y != -1)
 			{
-				outline = PosisiValid(map, kurir, kurir_rorr);
-				Rectangle destRecKurir = {kurir_rorr.x - outline.x + OFFSET_X, kurir_rorr.y - outline.y + OFFSET_Y, (float)kurir.width, (float)kurir.height};
-				DrawTexturePro(kurir_texture, sourceRecKurir, destRecKurir, origin, (float)rotation, WHITE);
+				float scale = 1.0f; // bisa diubah ke 0.5 jika kurir terlalu besar
+				Rectangle destRecKurir = {
+					kurir_rorr.x + OFFSET_X,
+					kurir_rorr.y + OFFSET_Y,
+					kurir.width * scale,
+					kurir.height * scale};
+				Vector2 originKurir = {
+					(kurir.width * scale) / 2.0f,
+					(kurir.height * scale) / 2.0f};
+				DrawTexturePro(kurir_texture, sourceRecKurir, destRecKurir, originKurir, (float)rotation, WHITE);
 
-				if (source.x != -1 && source.y != -1)
-				{
-					outline = PosisiValid(map, kurir, source);
-					DrawRectangle(source.x + OFFSET_X - outline.x, source.y + OFFSET_Y - outline.y, 20, 20, YELLOW);
-				}
+				// outline = PosisiValid(map, kurir, kurir_rorr);
+				// Rectangle destRecKurir = {kurir_rorr.x - outline.x + OFFSET_X, kurir_rorr.y - outline.y + OFFSET_Y, (float)kurir.width, (float)kurir.height};
+				// DrawTexturePro(kurir_texture, sourceRecKurir, destRecKurir, origin, (float)rotation, WHITE);
 
-				if (destination.x != -1 && destination.y != -1)
-				{
-					outline = PosisiValid(map, kurir, destination);
-					DrawRectangle(destination.x + OFFSET_X - outline.x, destination.y + OFFSET_Y - outline.y, 20, 20, RED);
-				}
+				// if (source.x != -1 && source.y != -1)
+				// {
+				// 	outline = PosisiValid(map, kurir, source);
+				// 	DrawRectangle(source.x + OFFSET_X - outline.x, source.y + OFFSET_Y - outline.y, 20, 20, YELLOW);
+				// }
+
+				// if (destination.x != -1 && destination.y != -1)
+				// {
+				// 	outline = PosisiValid(map, kurir, destination);
+				// 	DrawRectangle(destination.x + OFFSET_X - outline.x, destination.y + OFFSET_Y - outline.y, 20, 20, RED);
+				// }
+				// Ukuran titik source dan destination menyesuaikan grid kecil
+				// if (source.x != -1 && source.y != -1)
+				// {
+				// 	outline = PosisiValid(map, kurir, source);
+				// 	DrawRectangle((int)(source.x + OFFSET_X - outline.x + 0.5f), (int)(source.y + OFFSET_Y - outline.y + 0.5f), 10, 10, YELLOW);
+				// }
+
+				// if (destination.x != -1 && destination.y != -1)
+				// {
+				// 	outline = PosisiValid(map, kurir, destination);
+				// 	DrawRectangle((int)(destination.x + OFFSET_X - outline.x + 0.5f), (int)(destination.y + OFFSET_Y - outline.y + 0.5f), 10, 10, RED);
+				// }
 			}
 			if (button_reset)
 			{
